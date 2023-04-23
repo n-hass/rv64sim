@@ -16,8 +16,13 @@ using namespace std;
 class processor {
 
  private:
-
-  // TODO: Add private members here
+  bool verbose;
+  bool stage2;
+  memory* mem;
+  uint64_t pc;
+  uint64_t reg[32];
+  uint64_t breakpoint;
+  uint64_t instruction_count;
 
  public:
 
@@ -38,6 +43,9 @@ class processor {
 
   // Execute a number of instructions
   void execute(unsigned int num, bool breakpoint_check);
+
+  // Execute a single instruction at the PC - a step through the program
+  void step();
 
   // Clear breakpoint
   void clear_breakpoint();

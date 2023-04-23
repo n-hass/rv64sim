@@ -4,6 +4,7 @@
 #ifndef CUSTOM_LOGGER_H
 #define CUSTOM_LOGGER_H
 
+#include <sstream>
 #include <string>
 #include <fstream>
 #include <chrono>
@@ -54,7 +55,7 @@ private:
     
 public:
     // inline static vector allows session-wide access to log file
-    inline static std::vector<Logger*> all;
+    static std::vector<Logger*> all;
 
     Logger() { // constructor
         bool set = false;
@@ -257,6 +258,30 @@ public:
             delete temp;
         }
         all.clear();
+    }
+
+    static void glog(const std::string& msg) {
+        if (all.size() > 0) {
+            Logger* logptr = all[0];
+            if (logptr!=nullptr)
+                all[0]->log(Level::General, msg);
+        }
+    }
+
+    static void glog(const std::stringstream& msg) {
+        if (all.size() > 0) {
+            Logger* logptr = all[0];
+            if (logptr!=nullptr)
+                all[0]->log(Level::General, msg.str());
+        }
+    }
+
+    static void glog(const std::string& msg, int logger) {
+        if (all.size() >= logger) {
+            Logger* logptr = all[logger];
+            if (logptr!=nullptr)
+                logptr->log(Level::General, msg);
+        }
     }
     
 };

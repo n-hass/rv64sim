@@ -1,2 +1,7 @@
 CompileFlags:
-  Add: [-std=c++17]
+  Add:
+    - -std=c++11
+    - -I/opt/homebrew/include
+    - -L/opt/homebrew/lib
+    - -lboost_system
+    - -lboost_filesystem

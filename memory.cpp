@@ -15,22 +15,60 @@
 #include "memory.h"
 using namespace std;
 
+#include "LogControl.hpp"
+
+#define validate_read(address) \
+  index = address/blockSize; \
+  if (mem_m.find(index) == mem_m.end()) { \
+    block = (uintptr_t)malloc(blockSize); \
+    mem_m[index] = block; \
+  } else { \
+    block = mem_m[index]; \
+  }
+//
+
+#define validate_write(address) \
+  index = address/blockSize; \
+  if (mem_m.find(index) == mem_m.end()) { \
+    block = (uintptr_t)malloc(blockSize); \
+    memset((void*)block, 0, blockSize); \
+    mem_m[index] = block; \
+  } else { \
+    block = mem_m[index]; \
+  }
+//
+
 // Constructor
-memory::memory(bool verbose) {
-  // TODO: ...
+memory::memory(bool verbose) : mem_m() {
+  this->verbose = verbose;
 }
 
 // Read a doubleword of data from a doubleword-aligned address.
 // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
 uint64_t memory::read_doubleword (uint64_t address) {
-  // TODO: ...
+  address = address - (address % 8);
+
+  uint64_t offset = address % blockSize;
+  uint64_t index;
+  uintptr_t block;
+  validate_read(address);
+
+  return *reinterpret_cast< uint64_t* > (block+offset);
 }
 
 // Write a doubleword of data to a doubleword-aligned address.
 // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
 // The mask contains 1s for bytes to be updated and 0s for bytes that are to be unchanged.
 void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
-  // TODO: ...
+  address = address - (address % 8);
+
+  uint64_t offset = address % blockSize;
+  uint64_t index;
+  uintptr_t block;
+  validate_write(address);
+
+  uint64_t* ptr = reinterpret_cast< uint64_t* > (block+offset);
+  *ptr = (*ptr & ~mask) | (data & mask);
 }
 
 // Load a hex image file and provide the start address for execution from the file in start_address.

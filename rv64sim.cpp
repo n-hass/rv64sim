@@ -15,9 +15,16 @@
 #include "processor.h"
 #include "commands.h"
 
+#include "LogControl.hpp"
+
 using namespace std;
 
 int main(int argc, char* argv[]) {
+    #ifdef FullLogger
+        Logger* logger = new Logger();
+        logger->start("./","sim.log");
+        logger->globalise();
+    #endif
 
     // Values of command line options. 
     string arg;
@@ -55,11 +62,11 @@ int main(int argc, char* argv[]) {
     cout << "Instructions executed: " << dec << cpu_instruction_count << endl;
 
     if (cycle_reporting) {
-	// Required for postgraduate Computer Architecture course
-	unsigned long int cpu_cycle_count;
+        // Required for postgraduate Computer Architecture course
+        unsigned long int cpu_cycle_count;
 
-	cpu_cycle_count = cpu->get_cycle_count();
+        cpu_cycle_count = cpu->get_cycle_count();
 
-	cout << "CPU cycle count: " << dec << cpu_cycle_count << endl;
+        cout << "CPU cycle count: " << dec << cpu_cycle_count << endl;
     }
 }
