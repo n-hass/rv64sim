@@ -3,7 +3,15 @@
 // use extract bits to get the bit from start to end from value. IE (0x1234, 0, 3) will return 0x4.
 // start = LSB of result, end = MSB of result. Start must always be less than end.
 #define BITMASK(high, low) (((1ULL << ((high) - (low) + 1)) - 1) << (low))
+
+/*
+* Extracts bits from a value by specifying the high and low bits
+*/
 #define EXTRACT_BITS(value, high, low) (((value) & BITMASK((high), (low))) >> (low))
+
+/**
+* Extracts bits from a value by masking the original and THEN shifting the result.
+*/
 #define USE_BITMASK(value, mask, shift) (((value) & (mask)) >> (shift))
 
 // Extraction from a 32-bit RISC-V instruction

@@ -4,19 +4,19 @@ namespace rv64 {
   // opcode 
   enum opcode {
     nop_op = 0b0000000,
-    load_op = 0b0000011,
-    fen_op = 0b0001111,
-    imm_op = 0b0010011,
-    auipc_op = 0b0010111,
-    imm64_op = 0b0011011,
-    str_op = 0b0100011,
-    reg_op = 0b0110011,
     lui_op = 0b0110111,
-    reg64_op = 0b0111011,
-    bra_op = 0b1100011,
-    jalr_op = 0b1100111,
-    jal_op = 0b1101111,
+    auipc_op = 0b0010111,
+    imm_op = 0b0010011,
+    reg_op = 0b0110011,
+    fen_op = 0b0001111,
     sys_op = 0b1110011,
+    load_op = 0b0000011,
+    store_op = 0b0100011,
+    jal_op = 0b1101111,
+    jalr_op = 0b1100111,
+    branch_op = 0b1100011,
+    imm64_op = 0b0011011,
+    reg64_op = 0b0111011,
   };
 
   // funct codes, equiv to (funct3 << 7) & funct7 or just funct3
@@ -61,7 +61,7 @@ namespace rv64 {
     or_f = 0b1100000000,
     and_f = 0b1110000000
   };
-  enum bra_funct {
+  enum branch_funct {
     beq_f = 0b000,
     bne_f = 0b001,
     blt_f = 0b100,
