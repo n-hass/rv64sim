@@ -190,8 +190,8 @@ void processor::step() {
         break;
 
         case rv64::reg_funct73::sll_f:
-          // reg[rd] = reg[rs1] << EXTRACT_BITS(reg[rs2], 4, 0);
-          reg[rd] = reg[rs1] << reg[rs2];
+          reg[rd] = reg[rs1] << (reg[rs2] & 0x1F);
+          // reg[rd] = reg[rs1] << reg[rs2];
         break;
 
         case rv64::reg_funct73::slt_f:
@@ -207,13 +207,13 @@ void processor::step() {
         break;
 
         case rv64::reg_funct73::srl_f:
-          // reg[rd] = reg[rs1] >> EXTRACT_BITS(reg[rs2], 4, 0);
-          reg[rd] = reg[rs1] >> reg[rs2];
+          reg[rd] = reg[rs1] >> (reg[rs2] & 0x1F);
+          // reg[rd] = reg[rs1] >> reg[rs2];
         break;
 
         case rv64::reg_funct73::sra_f:
-          // reg[rd] = static_cast<int64_t>(reg[rs1]) >> EXTRACT_BITS(reg[rs2], 4, 0);
-          reg[rd] = static_cast<int64_t>(reg[rs1]) >> reg[rs2];
+          reg[rd] = static_cast<int64_t>(reg[rs1]) >> (reg[rs2] & 0x1F);
+          // reg[rd] = static_cast<int64_t>(reg[rs1]) >> reg[rs2];
         break;
 
         case rv64::reg_funct73::or_f:
@@ -505,7 +505,43 @@ void processor::step() {
     break;
     
     case rv64::opcode::reg64_op:
+      rd = EXTRACT_RD_FROM_INST(inst);
+      funct7_3 = EXTRACT_FUNCT7_AND_3_FROM_INST(inst);
+      rs1 = EXTRACT_RS1_FROM_INST(inst);
+      rs2 = EXTRACT_RS2_FROM_INST(inst);
 
+      switch (rv64::reg64_funct73(funct7_3)) {
+
+        case rv64::reg64_funct73::addw_f:
+          reg[rd] = int64_t(
+                            uint64_t( int32_t(reg[rs1]) + int32_t(reg[rs2]) ) << 32
+                           ) >> 32;
+        break;
+
+        case rv64::reg64_funct73::subw_f:
+          reg[rd] = int64_t(
+                            uint64_t( int32_t(reg[rs1]) - int32_t(reg[rs2]) ) << 32
+                           ) >> 32;
+        break;
+
+        case rv64::reg64_funct73::sllw_f:
+          reg[rd] = (int64_t(
+                            uint32_t(reg[rs1]) << (reg[rs2] & 0x1F)) << 32)
+                            >> 32;
+        break;
+
+        case rv64::reg64_funct73::srlw_f:
+          reg[rd] = (int64_t(
+                            uint32_t(reg[rs1]) >> (reg[rs2] & 0x1F)) << 32)
+                            >> 32;
+        break;
+
+        case rv64::reg64_funct73::sraw_f:
+          reg[rd] = (int64_t(
+                            int32_t(reg[rs1]) >> (reg[rs2] & 0x1F)) << 32)
+                            >> 32;
+        break;
+      }
     break;
 
 
