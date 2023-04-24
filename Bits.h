@@ -23,6 +23,5 @@
 #define EXTRACT_RD_FROM_INST(value) (((value) >> 7) & 0x1f)
 #define EXTRACT_RS1_FROM_INST(value) (((value) >> 15) & 0x1f)
 #define EXTRACT_RS2_FROM_INST(value) (((value) >> 20) & 0x1f)
-// #define EXTRACT_IMM12_FROM_INST(value) ( int64_t((uint64_t)(value) << 32) >> 52 ) // includes sign extension
 #define EXTRACT_IMM12_FROM_INST(value) (((int64_t)((uint64_t)(value) << 32)) >> 52) // inlcudes sign extension
-
+// #define EXTRACT_IMM12_FROM_INST(value) ( (int64_t)((int32_t)(value) >> 20) ) // inlcudes sign extension

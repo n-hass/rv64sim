@@ -48,12 +48,12 @@ memory::memory(bool verbose) : mem_m() {
 uint64_t memory::read_doubleword (uint64_t address) {
   address = address - (address % 8);
 
-  uint64_t offset = address % blockSize;
+  // uint64_t offset = address % blockSize;
   uint64_t index;
   uintptr_t block;
   validate_read(address);
 
-  return *reinterpret_cast< uint64_t* > (block+offset);
+  return *reinterpret_cast< uint64_t* > (block + (address % blockSize));
 }
 
 // Write a doubleword of data to a doubleword-aligned address.
@@ -62,13 +62,13 @@ uint64_t memory::read_doubleword (uint64_t address) {
 void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
   address = address - (address % 8);
 
-  uint64_t offset = address % blockSize;
+  // uint64_t offset = address % blockSize;
   uint64_t index;
   uintptr_t block;
   validate_write(address);
 
-  uint64_t* ptr = reinterpret_cast< uint64_t* > (block+offset);
-  *ptr = (*ptr & ~mask) | (data & mask);
+  uint64_t* dw = reinterpret_cast< uint64_t* > (block + (address % blockSize));
+  *dw = (*dw & ~mask) | (data & mask);
 }
 
 // Load a hex image file and provide the start address for execution from the file in start_address.
@@ -166,5 +166,13 @@ bool memory::load_file(string file_name, uint64_t &start_address) {
   else {
     cout << "Failed to open file" << endl;
     return false;
+  }
+}
+
+memory::~memory() {
+  // free every block, which is every key/value in the map
+  for (auto it = mem_m.begin(); it != mem_m.end(); ++it) {
+    // free an individual block
+    free( reinterpret_cast<void*>(it->second) );
   }
 }

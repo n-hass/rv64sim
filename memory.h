@@ -32,6 +32,8 @@ class memory {
 
   // Constructor
   memory(bool verbose);
+  // Destructor (frees memory)
+  ~memory();
      
   // Read a doubleword of data from a doubleword-aligned address.
   // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
@@ -47,7 +49,6 @@ class memory {
   // Load a hex image file and provide the start address for execution from the file in start_address.
   // Return true if the file was read without error, or false otherwise.
   bool load_file(string file_name, uint64_t &start_address);
-
 };
 
 #endif

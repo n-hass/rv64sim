@@ -19,20 +19,14 @@ namespace rv64 {
     reg64_op = 0b0111011,
   };
 
-  // funct codes, equiv to (funct3 << 7) & funct7 or just funct3
-  enum load_funct {
-    lb_f = 0b000,
-    lh_f = 0b001,
-    lw_f = 0b010,
-    ld_f = 0b011,
-    lbu_f = 0b100,
-    lhu_f = 0b101,
-    lwu_f = 0b110,
-  };
-  enum fen_funct {
-    fence_f = 0b000,
-    fence_i_f = 0b001
-  };
+  /* funct codes.
+     funct3 = strictly: funct3
+     funct73 = strictly: (funct3 << 7) & funct7
+
+     The individual enum attributes are named with f7/3 when the enum for a single 
+     instruction type is split in two (e.g. imm_funct3 for 14:12 of the I-type instructions
+      and imm_funct73 for 31:25+14:12 of the I-type instructions, with funct3 concatenated from the LSB of funct7)
+  */
   enum imm_funct3 {
     addi_f3 = 0b000,
     slti_f3 = 0b010,
@@ -49,7 +43,7 @@ namespace rv64 {
     srli_f73 = 0b101000000,
     srai_f73 = 0b101010000
   };
-  enum reg_funct {
+  enum reg_funct73 {
     add_f = 0b0000000000,
     sub_f = 0b0000100000,
     sll_f = 0b0010000000,
@@ -61,7 +55,30 @@ namespace rv64 {
     or_f = 0b1100000000,
     and_f = 0b1110000000
   };
-  enum branch_funct {
+  enum fen_funct3 {
+    fence_f = 0b000,
+    fence_i_f = 0b001
+  };
+  enum sys_rs2 {
+    ecall_f = 0b000,
+    ebreak_f = 0b001
+  };
+  enum load_funct3 {
+    lb_f = 0b000,
+    lh_f = 0b001,
+    lw_f = 0b010,
+    ld_f = 0b011,
+    lbu_f = 0b100,
+    lhu_f = 0b101,
+    lwu_f = 0b110,
+  };
+  enum store_funct3 {
+    sb_f = 0b000,
+    sh_f = 0b001,
+    sw_f = 0b010,
+    sd_f = 0b011
+  };
+  enum branch_funct3 {
     beq_f = 0b000,
     bne_f = 0b001,
     blt_f = 0b100,
@@ -69,31 +86,22 @@ namespace rv64 {
     bltu_f = 0b110,
     bgeu_f = 0b111
   };
-  enum imm64_funct {
-    addiw_f = 0b000,
-    slliw_f = 0b001,
-    slliw10_f = 0b0010000000,
-    srliw_f = 0b101,
-    srliw10_f = 0b1010000000,
-    sraiw_f = 0b101,
-    sraiw10_f = 0b1010100000
+  enum imm64_funct3 {
+    addiw_f3 = 0b000,
+    slliw_f3 = 0b001,
+    srliw_f3 = 0b101,
+    sraiw_f3 = 0b101, 
   };
-  enum reg64_funct {
+  enum imm64_funct73 {
+    srliw_f73 = 0b1010000000,
+    sraiw_f73 = 0b1010100000
+  };
+  enum reg64_funct73 {
     addw_f = 0b0000000000,
     subw_f = 0b0000100000,
     sllw_f = 0b0010000000,
     srlw_f = 0b1010000000,
     sraw_f = 0b1010100000
-  };
-  enum store_funct {
-    sb_f = 0b000,
-    sh_f = 0b001,
-    sw_f = 0b010,
-    sd_f = 0b011
-  };
-  enum sys_funct {
-    ecall_f = 0b000000000000,
-    ebreak_f = 0b000000000001
   };
 }
 
