@@ -19,7 +19,7 @@
 #define EXTRACT_FUNCT3_FROM_INST(value) (((value) >> 12) & 0x7)
 #define EXTRACT_FUNCT7_FROM_INST(value) (((value) >> 25) & 0x7f)
 // #define EXTRACT_FUNCT3_AND_7_FROM_INST(value) (EXTRACT_FUNCT7_FROM_INST((value)) << 3) | EXTRACT_FUNCT3_FROM_INST(value)
-#define EXTRACT_FUNCT7_AND_3_FROM_INST(value) ( (((value) & 0xFE000000) >> 22) | (((value) >> 12) & 0x7) )
+#define EXTRACT_FUNCT7_AND_3_FROM_INST(value) ( (((value) & 0xFE000000) >> 14) | (((value) >> 12) & 0x7) )
 #define EXTRACT_RD_FROM_INST(value) (((value) >> 7) & 0x1f)
 #define EXTRACT_RS1_FROM_INST(value) (((value) >> 15) & 0x1f)
 #define EXTRACT_RS2_FROM_INST(value) (((value) >> 20) & 0x1f)

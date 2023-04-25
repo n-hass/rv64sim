@@ -1,7 +1,7 @@
 CC=gcc
 CXX=g++
 RM=rm -rf
-CPPFLAGS=-g -std=c++11 -Wall -pedantic
+CPPFLAGS=-g -std=c++11 -Wall -pedantic -Wno-c++14-binary-literal
 LDFLAGS=-g
 BOOST=-I/opt/homebrew/include -L/opt/homebrew/lib -lboost_system -lboost_filesystem
 LDLIBS=

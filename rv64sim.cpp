@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <string>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "memory.h"
 #include "processor.h"
@@ -24,10 +25,18 @@ int main(int argc, char* argv[]) {
         Logger* logger = new Logger();
         logger->start("./","sim.log");
         logger->globalise();
+    #else
+        std::ofstream ofs;
+        ofs.open(LOGFILENAME, std::ofstream::out | std::ofstream::trunc);
+        ofs.close();
     #endif
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    do_log("Current working dir: " + string(cwd) + "\n");
 
     // Values of command line options. 
     string arg;
+    string testPath;
     bool verbose = false;
     bool cycle_reporting = false;
     bool stage2 = false;
@@ -36,24 +45,33 @@ int main(int argc, char* argv[]) {
     processor* cpu;
 
     unsigned long int cpu_instruction_count;
-    
+
     for (int i = 1; i < argc; i++) {
 	// Process the next option
 	arg = string(argv[i]);
+    cout << "parsing arg: " << arg << endl;
 	if (arg == "-v")  // Verbose output
 	    verbose = true;
 	else if (arg == "-c")  // Cycle and instruction reporting enabled
 	    cycle_reporting = true;
 	else if (arg == "-s2")  // Stage 2 functionality enabled
 	    stage2 = true;
-	else {
-	    cout << argv[0] << ": Unknown option: " << arg << endl;
-	}
+	else if (arg.substr(0,9) == "--testHex"){
+	    testPath = arg.substr(10);
+        cout << "reading from test file: "<< testPath<< "\n";
+    }
+	// else {
+	//     cout << argv[0] << ": Unknown option: " << arg << endl;
+	// }
     }
 
     main_memory = new memory (verbose);
     cpu = new processor (main_memory, verbose, stage2);
-
+    if (testPath != "") {
+        uint64_t start_address;
+        if (main_memory->load_file(testPath, start_address))
+            cpu->set_pc(start_address);
+    }
     interpret_commands(main_memory, cpu, verbose);
 
     // Report final statistics

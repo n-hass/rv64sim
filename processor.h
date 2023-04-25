@@ -13,6 +13,8 @@
 
 using namespace std;
 
+#define NO_BREAKPOINT 0xffffffffffffffff
+
 class processor {
 
  private:
@@ -23,6 +25,11 @@ class processor {
   uint64_t reg[32];
   uint64_t breakpoint;
   uint64_t instruction_count;
+  uint64_t cycle_count;
+
+  // functionally irrelevant for stage 1:
+  // uint8_t prv; // privilege level
+  // uint64_t csr[4096]; // CSR registers
 
  public:
 
@@ -59,7 +66,7 @@ class processor {
 
   // Set privilege level
   // Empty implementation for stage 1, required for stage 2
-  void set_prv(unsigned int prv_num);
+  void set_prv(uint8_t prv_num);
 
   // Display CSR value
   // Empty implementation for stage 1, required for stage 2

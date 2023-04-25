@@ -3,7 +3,6 @@
 namespace rv64 {
   // opcode 
   enum opcode {
-    nop_op = 0b0000000,
     lui_op = 0b0110111,
     auipc_op = 0b0010111,
     imm_op = 0b0010011,
@@ -39,21 +38,21 @@ namespace rv64 {
     srai_f3 = 0b101, // note is a duplicate of above, is differentiated by funct7 (most significant 7 bits)
   };
   enum imm_funct73 { // this must be split as these are imm instructions (I-format) that don't use 12-bit immediate values and instead emulate the functionality of funct7 and shamt
-    slli_f73 = 0b001000000,
-    srli_f73 = 0b101000000,
-    srai_f73 = 0b101010000
+    slli_f73 = 0b000000001,
+    srli_f73 = 0b000000101,
+    srai_f73 = 0b010000101
   };
   enum reg_funct73 {
     add_f = 0b0000000000,
-    sub_f = 0b0000100000,
-    sll_f = 0b0010000000,
-    slt_f = 0b0100000000,
-    sltu_f = 0b0110000000,
-    xor_f = 0b1000000000,
-    srl_f = 0b1010000000,
-    sra_f = 0b1010100000,
-    or_f = 0b1100000000,
-    and_f = 0b1110000000
+    sub_f = 0b0100000000,
+    sll_f = 0b0000000001,
+    slt_f = 0b0000000010,
+    sltu_f = 0b0000000011,
+    xor_f = 0b0000000100,
+    srl_f = 0b0000000101,
+    sra_f = 0b0100000101,
+    or_f = 0b0000000110,
+    and_f = 0b0000000111
   };
   enum fen_funct3 {
     fence_f = 0b000,
@@ -93,15 +92,15 @@ namespace rv64 {
     sraiw_f3 = 0b101, 
   };
   enum imm64_funct73 {
-    srliw_f73 = 0b1010000000,
-    sraiw_f73 = 0b1010100000
+    srliw_f73 = 0b0000000101,
+    sraiw_f73 = 0b0100000101
   };
   enum reg64_funct73 {
     addw_f = 0b0000000000,
-    subw_f = 0b0000100000,
-    sllw_f = 0b0010000000,
-    srlw_f = 0b1010000000,
-    sraw_f = 0b1010100000
+    subw_f = 0b0100000000,
+    sllw_f = 0b0000000001,
+    srlw_f = 0b0000000101,
+    sraw_f = 0b0100000101
   };
 }
 
