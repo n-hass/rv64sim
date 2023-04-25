@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #ifdef BOOST_ENABLE
   #include "Logger.hpp"

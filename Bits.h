@@ -19,10 +19,20 @@
 #define EXTRACT_FUNCT3_FROM_INST(value) (((value) >> 12) & 0x7)
 #define EXTRACT_FUNCT7_FROM_INST(value) (((value) >> 25) & 0x7f)
 // #define EXTRACT_FUNCT3_AND_7_FROM_INST(value) (EXTRACT_FUNCT7_FROM_INST((value)) << 3) | EXTRACT_FUNCT3_FROM_INST(value)
-#define EXTRACT_FUNCT7_AND_3_FROM_INST(value) ( (((value) & 0xFE000000) >> 14) | (((value) >> 12) & 0x7) )
+#define EXTRACT_FUNCT7_AND_3_FROM_INST(value) ( (((value) & 0xFE000000) >> 22) | (((value) >> 12) & 0x7) )
 #define EXTRACT_RD_FROM_INST(value) (((value) >> 7) & 0x1f)
 #define EXTRACT_RS1_FROM_INST(value) (((value) >> 15) & 0x1f)
 #define EXTRACT_RS2_FROM_INST(value) (((value) >> 20) & 0x1f)
 #define EXTRACT_IMM12_FROM_INST(value) (((int64_t)((uint64_t)(value) << 32)) >> 52) // inlcudes sign extension
 // #define EXTRACT_IMM12_FROM_INST(value) ( (int64_t)((int32_t)(value) >> 20) ) // inlcudes sign extension
 #define EXTRACT_STORE_OFFSET_FROM_INST(value) ( int64_t(uint64_t( (value & 0xFE000000) | ((value & 0x00000F80)<<13) ) << 32 ) >> 52) 
+#define EXTRACT_BRANCH_OFFSET_FROM_INST(value) (int64_t( \
+                                      uint64_t(USE_BITMASK(inst, 0xFE000000, 25) >> 6) << 63 | \
+                                      uint64_t(USE_BITMASK(inst, 0x00000F80, 7) % 2) << 62 | \
+                                      uint64_t(USE_BITMASK(inst, 0xFE000000, 25) & 0x3F) << 56 | \
+                                      uint64_t(USE_BITMASK(inst, 0x00000F80, 7) >> 1) << 52 \
+                                    ) >> 51 )
+#define EXTRACT_JAL_OFFSET_FROM_INST(value) ( (int32_t)(((((inst) >> 21) & ((1 << 10) - 1)) << 1) | \
+                                      ((((inst) >> 20) & ((1 << 1) - 1)) << 11) | \
+                                      ((((inst) >> 12) & ((1 << 8) - 1)) << 12) | \
+                                      ((-(((inst) >> 31) & 1)) << 20)) )

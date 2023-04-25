@@ -10,6 +10,8 @@
 **************************************************************** */
 
 #include "memory.h"
+#include <string>
+#include "LogControl.hpp"
 
 using namespace std;
 
@@ -51,7 +53,10 @@ class processor {
   void show_reg(unsigned int reg_num);
 
   // Set register to new value
-  void set_reg(unsigned int reg_num, uint64_t new_value);
+  inline void set_reg(unsigned int reg_num, uint64_t new_value) {
+    if (reg_num != 0) reg[reg_num] = new_value;
+    do_log("Setting x" + to_string(reg_num) + " to " + to_string(new_value));
+  }
 
   // Execute a number of instructions
   void execute(unsigned int num, bool breakpoint_check);
