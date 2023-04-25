@@ -37,7 +37,8 @@ namespace rv64 {
     srli_f3 = 0b101,
     srai_f3 = 0b101, // note is a duplicate of above, is differentiated by funct7 (most significant 7 bits)
   };
-  enum imm_funct73 { // this must be split as these are imm instructions (I-format) that don't use 12-bit immediate values and instead emulate the functionality of funct7 and shamt
+  // note: is 31:26 + 14:12, NOT full funct7
+  enum imm_funct9 { // this must be split as these are imm instructions (I-format) that don't use 12-bit immediate values and instead emulate the functionality of funct7 and shamt
     slli_f73 = 0b000000001,
     srli_f73 = 0b000000101,
     srai_f73 = 0b010000101

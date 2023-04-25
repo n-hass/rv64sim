@@ -15,7 +15,7 @@
 
 using namespace std;
 
-#define NO_BREAKPOINT 0xffffffffffffffff
+#define NO_BREAKPOINT ~0ULL
 
 class processor {
 
@@ -24,12 +24,13 @@ class processor {
   bool stage2;
   memory* mem;
   uint64_t pc;
-  uint64_t reg[32];
+  int64_t reg[32];
   uint64_t breakpoint;
   uint64_t instruction_count;
   uint64_t cycle_count;
 
   bool pc_changed;
+  bool alive;
 
   // functionally irrelevant for stage 1:
   // uint8_t prv; // privilege level

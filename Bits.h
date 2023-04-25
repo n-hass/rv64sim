@@ -14,17 +14,18 @@
 */
 #define USE_BITMASK(value, mask, shift) (((value) & (mask)) >> (shift))
 
-// Extraction from a 32-bit RISC-V instruction
+// Field extraction from a 32-bit RISC-V instruction in RV64
 #define EXTRACT_OPCODE_FROM_INST(value) ((value) & 0x7f)
 #define EXTRACT_FUNCT3_FROM_INST(value) (((value) >> 12) & 0x7)
 #define EXTRACT_FUNCT7_FROM_INST(value) (((value) >> 25) & 0x7f)
-// #define EXTRACT_FUNCT3_AND_7_FROM_INST(value) (EXTRACT_FUNCT7_FROM_INST((value)) << 3) | EXTRACT_FUNCT3_FROM_INST(value)
 #define EXTRACT_FUNCT7_AND_3_FROM_INST(value) ( (((value) & 0xFE000000) >> 22) | (((value) >> 12) & 0x7) )
 #define EXTRACT_RD_FROM_INST(value) (((value) >> 7) & 0x1f)
 #define EXTRACT_RS1_FROM_INST(value) (((value) >> 15) & 0x1f)
 #define EXTRACT_RS2_FROM_INST(value) (((value) >> 20) & 0x1f)
 #define EXTRACT_IMM12_FROM_INST(value) (((int64_t)((uint64_t)(value) << 32)) >> 52) // inlcudes sign extension
 // #define EXTRACT_IMM12_FROM_INST(value) ( (int64_t)((int32_t)(value) >> 20) ) // inlcudes sign extension
+#define EXTRACT_SHAMT32_FROM_INST(value) (((value) >> 20) & 0x1f)
+#define EXTRACT_SHAMT64_FROM_INST(value) (((value) >> 20) & 0x3f)
 #define EXTRACT_STORE_OFFSET_FROM_INST(value) ( int64_t(uint64_t( (value & 0xFE000000) | ((value & 0x00000F80)<<13) ) << 32 ) >> 52) 
 #define EXTRACT_BRANCH_OFFSET_FROM_INST(value) (int64_t( \
                                       uint64_t(USE_BITMASK(inst, 0xFE000000, 25) >> 6) << 63 | \
