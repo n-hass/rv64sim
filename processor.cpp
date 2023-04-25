@@ -29,7 +29,7 @@ processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->stage2 = stage2;
   this->mem = main_memory;
   this->pc = 0;
-  this->breakpoint = 0;
+  this->breakpoint = NO_BREAKPOINT;
   memset(reg, 0, sizeof(uint64_t)*32);
 }
 
@@ -40,7 +40,13 @@ void processor::show_pc() {
 
 // Set PC
 void processor::set_pc(uint64_t new_pc) {
+  do_log("Setting pc to " + to_string(new_pc));
   pc = new_pc;
+}
+
+void processor::increment_pc() {
+  if (!pc_changed)
+    pc += 4;
 }
 
 // Prints a register value
@@ -50,7 +56,8 @@ void processor::show_reg(unsigned int reg_num) {
 
 // Sets a register value
 void processor::set_reg(unsigned int reg_num, uint64_t new_value) {
-  reg[reg_num] = new_value;
+  if (reg_num != 0) reg[reg_num] = new_value;
+  do_log("Setting x" + to_string(reg_num) + " to " + to_string(new_value));
 }
 
 // Execute 'num' instructions
@@ -66,15 +73,16 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
     }
 
     if (pc % 4 != 0) {
-      cout << "Error: misaligned PC" << endl;
+      cout << "Error: misaligned pc" << endl;
       exit = false;
       break;
     }
 
+    pc_changed = false;
     step();
 
     instruction_count++;
-    set_pc(pc+4);
+    increment_pc();
 
     num--;
   } while (num > 0);
@@ -97,6 +105,9 @@ void processor::step() {
   uint8_t rd;
   uint8_t rs1;
   uint8_t rs2;
+  // uint16_t rd;
+  // uint16_t rs1;
+  // uint16_t rs2;
   int64_t imm;
 
   uint64_t address;
@@ -131,7 +142,8 @@ void processor::step() {
         case rv64::imm_funct3::addi_f3:
           do_log("ADDI at PC: " << pc);
           reg[rd] = reg[rs1] + imm;
-          do_log("addi "<<(unsigned int)rd<<", "<<(unsigned int)rs1<<", "<<imm);
+          // do_log("addi "<<(unsigned int)rd<<", "<<(unsigned int)rs1<<", "<<imm);
+          do_log("x"<<(unsigned int)rd<<" = "<<(unsigned int)reg[rs1]<<" + "<<imm);
         break;
 
         case rv64::imm_funct3::slti_f3:
@@ -287,24 +299,27 @@ void processor::step() {
       address = reg[rs1] + imm;
 
       do_log("load_op: address = " << address);
-      dwa = mem->read_doubleword(address);
       
       funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
       switch (rv64::load_funct3(funct3)){
         
         case rv64::load_funct3::lb_f:
           do_log("LB at " << pc);
+          dwa = mem->read_doubleword(address);
           reg[rd] = int64_t(uint64_t(dwa) << 56) >> 56;
+          do_log("lb x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lh_f:
           do_log("LH at " << pc);
           if (address % 2 != 0) {
             // misaligned 
-            do_log("Error: misaligned address when doing: lh x"<< rd << ", " << imm << "(" << rs1 << ")");
+            do_log("Error: misaligned address when doing: lh x"<< rd << ", " << imm << "(x" << rs1 << ")");
             return;
           }
+          dwa = mem->read_doubleword(address);
           reg[rd] = int64_t(uint64_t(dwa) << 48) >> 48;
+          do_log("lh x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lw_f:
@@ -314,7 +329,9 @@ void processor::step() {
             do_log("Error: misaligned address when doing: lw x"<< rd << ", " << imm << "(" << rs1 << ")");
             return;
           }
+          dwa = int32_t(mem->read_word(address));
           reg[rd] = int64_t(uint64_t(dwa) << 32) >> 32;
+          do_log("lw x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::ld_f:
@@ -324,12 +341,16 @@ void processor::step() {
             do_log("Error: misaligned address when doing: ld x"<< rd << ", " << imm << "(" << rs1 << ")");
             return;
           }
+          dwa = mem->read_doubleword(address);
           reg[rd] = dwa;
+          do_log("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lbu_f:
           do_log("LBU at " << pc);
+          dwa = mem->read_doubleword(address);
           reg[rd] = dwa & 0xFF;
+          do_log("lbu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lhu_f:
@@ -339,7 +360,9 @@ void processor::step() {
             do_log("Error: misaligned address when doing: lhu x"<< rd << ", " << imm << "(" << rs1 << ")");
             return;
           }
+          dwa = mem->read_doubleword(address);
           reg[rd] = dwa & 0xFFFF;
+          do_log("lhu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lwu_f:
@@ -349,14 +372,16 @@ void processor::step() {
             do_log("Error: misaligned address when doing: lwu x"<< rd << ", " << imm << "(" << rs1 << ")");
             return;
           }
+          dwa = mem->read_doubleword(address);
           reg[rd] = dwa & 0xFFFFFFFF;
+          do_log("lwu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
       }
 
     break;
 
     case rv64::opcode::store_op:
-      imm = USE_BITMASK(inst, 0xFE00000, 20) | USE_BITMASK(inst, 0x00000F80, 7); // 1111 1110 0000 0000 0000 1111 1000 0000
+      imm = EXTRACT_STORE_OFFSET_FROM_INST(inst); // 1111 1110 0000 0000 0000 1111 1000 0000
       rs2 = EXTRACT_RS2_FROM_INST(inst);
       rs1 = EXTRACT_RS1_FROM_INST(inst);
       funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
@@ -367,17 +392,19 @@ void processor::step() {
 
         case (rv64::store_funct3::sb_f):
           do_log("SB at " << pc);
-          mem->write_doubleword(address, reg[rs2], 0xFF);
+          mem->write_byte(address, reg[rs2], 0xFF);
+          do_log("sb x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case (rv64::store_funct3::sh_f):
           do_log("SH at " << pc);
           if (address % 2 != 0) {
             // misaligned 
-            do_log("Error: misaligned address when doing: sh x"<< rs2 << ", " << imm << "(" << rs1 << ")");
+            do_log("Error: misaligned address when doing: sh x"<< (unsigned int)rs2 << ", " << imm << "(" << (unsigned int)rs1 << ")");
             return;
           }
-          mem->write_doubleword(address, reg[rs2], 0xFFFF);
+          mem->write_half(address, reg[rs2], ~0ULL);
+          do_log("sh x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case (rv64::store_funct3::sw_f):
@@ -387,7 +414,8 @@ void processor::step() {
             do_log("Error: misaligned address when doing: sw x"<< rs2 << ", " << imm << "(" << rs1 << ")");
             return;
           }
-          mem->write_doubleword(address, reg[rs2], 0xFFFFFFFF);
+          mem->write_word(address, reg[rs2], ~0ULL);
+          do_log("sw x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case (rv64::store_funct3::sd_f):
@@ -397,7 +425,8 @@ void processor::step() {
             do_log("Error: misaligned address when doing: sd x"<< rs2 << ", " << imm << "(" << rs1 << ")");
             return;
           }
-          mem->write_doubleword(address, reg[rs2], 0xFFFFFFFFFFFFFFFF);
+          mem->write_doubleword(address, reg[rs2], ~0ULL);
+          do_log("sd x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
       }
 
@@ -411,8 +440,9 @@ void processor::step() {
                      ((((inst) >> 12) & ((1 << 8) - 1)) << 12) |
                      ((-(((inst) >> 31) & 1)) << 20));
       rd = EXTRACT_RD_FROM_INST(inst);
-      reg[rd] = pc + 4; // TODO: check this incrementation against the execute function
+      reg[rd] = pc + 4;
       pc = pc + imm;
+      pc_changed = true;
     break;
 
     case rv64::opcode::jalr_op:
@@ -420,8 +450,9 @@ void processor::step() {
       imm = EXTRACT_IMM12_FROM_INST(inst);
       rs1 = EXTRACT_RS1_FROM_INST(inst);
       rd = EXTRACT_RD_FROM_INST(inst);
-      reg[rd] = pc + 4; // TODO: check this incrementation against the execute function
+      reg[rd] = pc + 4;
       pc = (reg[rs1] + imm) & 0xFFFFFFFE;
+      pc_changed = true;
     break;
 
     case rv64::opcode::branch_op:
@@ -458,7 +489,6 @@ void processor::step() {
                     uint64_t(USE_BITMASK(inst, 0xFE000000, 25) & 0x3F) << 56 | 
                     uint64_t(USE_BITMASK(inst, 0x00000F80, 7) >> 1) << 52
                    ) >> 51;
-      imm -= 4; // because pc will be incremented by 4 in processor::execute()
 
       rs2 = EXTRACT_RS2_FROM_INST(inst);
       rs1 = EXTRACT_RS1_FROM_INST(inst);
@@ -469,6 +499,7 @@ void processor::step() {
           do_log("BEQ at " << pc);
           if (reg[rs1] == reg[rs2]) {
             pc = pc + imm;
+            pc_changed = true;
           }
         break;
 
@@ -476,6 +507,7 @@ void processor::step() {
           do_log("BNE at " << pc);
           if (reg[rs1] != reg[rs2]) {
             pc = pc + imm;
+            pc_changed = true;
           }
         break;
 
@@ -483,6 +515,7 @@ void processor::step() {
           do_log("BLT at " << pc);
           if (static_cast<int64_t>(reg[rs1]) < static_cast<int64_t>(reg[rs2])) {
             pc = pc + imm;
+            pc_changed = true;
           }
         break;
 
@@ -490,6 +523,7 @@ void processor::step() {
           do_log("BGE at " << pc);
           if (static_cast<int64_t>(reg[rs1]) >= static_cast<int64_t>(reg[rs2])) {
             pc = pc + imm;
+            pc_changed = true;
           }
         break;
 
@@ -497,6 +531,7 @@ void processor::step() {
           do_log("BLTU at " << pc);
           if (reg[rs1] < reg[rs2]) {
             pc = pc + imm;
+            pc_changed = true;
           }
         break;
 
@@ -504,6 +539,7 @@ void processor::step() {
           do_log("BGEU at " << pc);
           if (reg[rs1] >= reg[rs2]) {
             pc = pc + imm;
+            pc_changed = true;
           }
         break;
       }
@@ -591,6 +627,10 @@ void processor::step() {
       }
     break;
 
+    default:
+      do_log("Unknown instruction at " << pc);
+      std::cout << "Illegal instruction at " << pc << std::endl;
+    break;
 
   }
   
@@ -602,6 +642,7 @@ void processor::clear_breakpoint() {
 
 void processor::set_breakpoint(uint64_t addr) {
   breakpoint = addr;
+  do_log("Breakpoint set at " << std::hex << addr);
 }
 
 void processor::show_prv() {

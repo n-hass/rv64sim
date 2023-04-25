@@ -17,7 +17,7 @@ using namespace std;
 
 #include "LogControl.hpp"
 
-#define validate_read(address) \
+#define validate(address) \
   index = address/blockSize; \
   if (mem_m.find(index) == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
@@ -27,7 +27,7 @@ using namespace std;
   }
 //
 
-#define validate_write(address) \
+#define validate_with_memset(address) \
   index = address/blockSize; \
   if (mem_m.find(index) == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
@@ -51,24 +51,71 @@ uint64_t memory::read_doubleword (uint64_t address) {
   // uint64_t offset = address % blockSize;
   uint64_t index;
   uintptr_t block;
-  validate_read(address);
+  validate(address);
 
+  do_log("Memory read doubleword: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
   return *reinterpret_cast< uint64_t* > (block + (address % blockSize));
+}
+
+uint32_t memory::read_word (uint64_t address) {
+  address = address - (address % 4);
+
+  uint64_t index;
+  uintptr_t block;
+  validate(address);
+
+  do_log("Memory read word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
+  return *reinterpret_cast< uint32_t* > (block + (address % blockSize));
 }
 
 // Write a doubleword of data to a doubleword-aligned address.
 // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
 // The mask contains 1s for bytes to be updated and 0s for bytes that are to be unchanged.
 void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
-  address = address - (address % 8);
+  address -= address % 8;
 
-  // uint64_t offset = address % blockSize;
   uint64_t index;
   uintptr_t block;
-  validate_write(address);
+  validate_with_memset(address);
 
   uint64_t* dw = reinterpret_cast< uint64_t* > (block + (address % blockSize));
   *dw = (*dw & ~mask) | (data & mask);
+  do_log("Memory doublewrite word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+}
+
+void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
+  address -= address % 4;
+
+  uint64_t index;
+  uintptr_t block;
+  validate(address);
+
+  uint32_t* dw = reinterpret_cast< uint32_t* > (block + (address % blockSize));
+  *dw = (*dw & ~mask) | (data & mask);
+  do_log("Memory write word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+}
+
+void memory::write_half(uint64_t address, uint64_t data, uint64_t mask) {
+  address -= address % 2;
+
+  uint64_t index;
+  uintptr_t block;
+  validate(address);
+
+  uint16_t *mem = reinterpret_cast<uint16_t *>(block + (address % blockSize));
+  *mem = (*mem & ~mask) | (data & mask);
+  do_log("Memory write half: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+}
+
+void memory::write_byte(uint64_t address, uint64_t data, uint64_t mask) {
+
+  uint64_t index;
+  uintptr_t block;
+  validate(address);
+
+  uint16_t *mem = reinterpret_cast<uint16_t *>(block + (address % blockSize));
+  *mem = (*mem & ~mask) | (data & mask);
+  do_log("Memory write byte: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 // Load a hex image file and provide the start address for execution from the file in start_address.

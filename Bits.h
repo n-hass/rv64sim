@@ -25,3 +25,4 @@
 #define EXTRACT_RS2_FROM_INST(value) (((value) >> 20) & 0x1f)
 #define EXTRACT_IMM12_FROM_INST(value) (((int64_t)((uint64_t)(value) << 32)) >> 52) // inlcudes sign extension
 // #define EXTRACT_IMM12_FROM_INST(value) ( (int64_t)((int32_t)(value) >> 20) ) // inlcudes sign extension
+#define EXTRACT_STORE_OFFSET_FROM_INST(value) ( int64_t(uint64_t( (value & 0xFE000000) | ((value & 0x00000F80)<<13) ) << 32 ) >> 52) 

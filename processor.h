@@ -27,6 +27,8 @@ class processor {
   uint64_t instruction_count;
   uint64_t cycle_count;
 
+  bool pc_changed;
+
   // functionally irrelevant for stage 1:
   // uint8_t prv; // privilege level
   // uint64_t csr[4096]; // CSR registers
@@ -41,6 +43,9 @@ class processor {
 
   // Set PC to new value
   void set_pc(uint64_t new_pc);
+
+  // increment the PC after an instruction. Will do nothing if the last instruction was a jump/branch
+  void increment_pc();
 
   // Display register value
   void show_reg(unsigned int reg_num);

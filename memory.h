@@ -38,12 +38,17 @@ class memory {
   // Read a doubleword of data from a doubleword-aligned address.
   // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
   uint64_t read_doubleword (uint64_t address);
+  uint32_t read_word (uint64_t address);
 
 
   // Write a doubleword of data to a doubleword-aligned address.
   // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
   // The mask contains 1s for bytes to be updated and 0s for bytes that are to be unchanged.
   void write_doubleword (uint64_t address, uint64_t data, uint64_t mask);
+  void write_word(uint64_t address, uint64_t data, uint64_t mask);
+  void write_half(uint64_t address, uint64_t data, uint64_t mask);
+  void write_byte(uint64_t address, uint64_t data, uint64_t mask);
+
 
 
   // Load a hex image file and provide the start address for execution from the file in start_address.
