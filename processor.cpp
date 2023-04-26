@@ -38,17 +38,6 @@ void processor::show_pc() {
   cout << setw(16) << setfill('0') << hex << pc << endl;
 }
 
-// Set PC
-void processor::set_pc(uint64_t new_pc) {
-  do_log("Setting pc to " + to_string(new_pc));
-  pc = new_pc;
-}
-
-void processor::increment_pc() {
-  if (!pc_changed)
-    pc += 4;
-}
-
 // Prints a register value
 void processor::show_reg(unsigned int reg_num) {
   cout << setw(16) << setfill('0') << hex << reg[reg_num] << endl;
@@ -176,17 +165,17 @@ void processor::step() {
           switch (rv64::imm_funct9(funct7_3)) {
             case rv64::imm_funct9::slli_f73:
               do_log("SLLI at " << pc);
-              set_reg(rd, reg[rs1] << rs2); // rs2 is actually shamt, not a register
+              set_reg(rd, reg[rs1] << rs2);
             break;
 
             case rv64::imm_funct9::srli_f73:
               do_log("SRLI at " << pc);
-              set_reg(rd, reg[rs1] >> rs2); // rs2 is actually shamt, not a register
+              set_reg(rd, (((uint64_t)reg[rs1]) >> rs2));
             break;
 
             case rv64::imm_funct9::srai_f73:
               do_log("SRAI at " << pc);
-              set_reg(rd, static_cast<int64_t>(reg[rs1]) >> rs2); // rs2 is actually shamt, not a register
+              set_reg(rd, static_cast<int64_t>(reg[rs1]) >> rs2);
             break;
           }
 
@@ -320,6 +309,9 @@ void processor::step() {
 
         case rv64::load_funct3::ld_f:
           do_log("LD at " << pc);
+          if (address % 4 != 0) {
+            cout << "Error: misaligned address for ld" << endl;
+          }
           dwa = mem->read_doubleword(address);
           set_reg(rd, dwa);
           do_log("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
@@ -400,7 +392,7 @@ void processor::step() {
       imm = EXTRACT_JAL_OFFSET_FROM_INST(inst);
       rd = EXTRACT_RD_FROM_INST(inst);
       set_reg(rd, pc + 4);
-      pc = pc + imm;
+      set_pc(pc + imm);
       pc_changed = true;
     break;
 
@@ -420,45 +412,11 @@ void processor::step() {
       }
 
       set_reg(rd, pc + 4);
-      pc = (dwa);
+      set_pc(dwa);
       pc_changed = true;
-
     break;
 
     case rv64::opcode::branch_op:
-      // imm = USE_BITMASK(inst, 0x80000000, 11) | USE_BITMASK(inst, 0x7E000000, 5) | USE_BITMASK(inst, 0x00100000, 4) | USE_BITMASK(inst, 0x00000F00, 1);
-      
-      // imm = (int64_t)(uint64_t(((inst & 0xFE000000) >> 25) >> 6) << 63 |
-      //                 uint64_t(((inst & 0x00000F80) >> 7) % 2) << 62 |
-      //                 uint64_t(((inst & 0xFE000000) >> 25) & 0x3F) << 56 | 
-      //                 uint64_t(((inst & 0x00000F80) >> 7) >> 1) << 52) >> 51;
-      
-      // imm = EXTRACT_RD_FROM_INST(inst);
-      // if (imm & 1) {
-      //   imm = imm - 1;
-      //   imm = imm | (1<<11);
-      // }
-      // imm = imm | (EXTRACT_FUNCT7_FROM_INST(inst) << 5);
-      // imm = (int64_t)((int32_t)(imm & BITMASK(31, 20))) >> 20;
-
-      // imm = 0;
-      // rd = EXTRACT_RD_FROM_INST(inst);
-      // funct7 = EXTRACT_FUNCT7_FROM_INST(inst);
-
-      // imm = ( (funct7 & 0x40) << 6 ) |
-      //       ( (rd & 0x1) << 11 ) |
-      //       ( (funct7 & 0x3F) << 5 ) |
-      //       ( rd & 0x1E ) ;
-      // if (imm & 0x800) { // sign extend where necessary
-      //   imm = imm | 0xFFFFF000;
-      // }
-
-      // imm = int64_t(
-      //               uint64_t(USE_BITMASK(inst, 0xFE000000, 25) >> 6) << 63 | 
-      //               uint64_t(USE_BITMASK(inst, 0x00000F80, 7) % 2) << 62 |
-      //               uint64_t(USE_BITMASK(inst, 0xFE000000, 25) & 0x3F) << 56 | 
-      //               uint64_t(USE_BITMASK(inst, 0x00000F80, 7) >> 1) << 52
-      //              ) >> 51;
       imm = EXTRACT_BRANCH_OFFSET_FROM_INST(inst);
 
       rs2 = EXTRACT_RS2_FROM_INST(inst);
@@ -539,18 +497,17 @@ void processor::step() {
         case rv64::imm64_funct3::srliw_f3: // sraiw has the same funct3
           rs2 = EXTRACT_SHAMT32_FROM_INST(inst);
 
-          funct7_3 = EXTRACT_FUNCT7_AND_3_FROM_INST(inst);
-          // funct7_3 = (USE_BITMASK(inst, 0xFC000000, 23)) | USE_BITMASK(inst, 0x00007000, 12);
+          funct7_3 = EXTRACT_FUNCT7_FROM_INST(inst);
 
-          switch (rv64::imm64_funct73(funct7_3)) {
-            case rv64::imm64_funct73::srliw_f73:
+          switch (rv64::imm64_funct7(funct7_3)) {
+            case rv64::imm64_funct7::srliw_f7: 
               do_log("SRLIW at " << pc);
-              set_reg(rd, uint64_t( uint32_t(reg[rs1]) >> rs2 ));
+              set_reg(rd, (int64_t)((int32_t)(((uint32_t)reg[rs1]) >> rs2)) );
             break;
 
-            case rv64::imm64_funct73::sraiw_f73:
+            case rv64::imm64_funct7::sraiw_f7:
               do_log("SRAIW at " << pc);
-              set_reg(rd, (int64_t( int32_t(reg[rs1]) >> rs2 ) << 32 ) >> 32);
+              set_reg(rd, int64_t ( ((int32_t)reg[rs1]) >> rs2) );
             break;
           }
 

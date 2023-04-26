@@ -92,9 +92,9 @@ namespace rv64 {
     srliw_f3 = 0b101,
     sraiw_f3 = 0b101, 
   };
-  enum imm64_funct73 {
-    srliw_f73 = 0b0000000101,
-    sraiw_f73 = 0b0100000101
+  enum imm64_funct7 {
+    srliw_f7 = 0b0000000,
+    sraiw_f7 = 0b0100000
   };
   enum reg64_funct73 {
     addw_f = 0b0000000000,

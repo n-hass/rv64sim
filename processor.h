@@ -45,10 +45,17 @@ class processor {
   void show_pc();
 
   // Set PC to new value
-  void set_pc(uint64_t new_pc);
+  inline void set_pc(uint64_t new_pc) {
+    do_log("Setting pc to " + to_string(new_pc));
+    pc = new_pc - (new_pc % 2);
+  }
 
   // increment the PC after an instruction. Will do nothing if the last instruction was a jump/branch
-  void increment_pc();
+  inline void increment_pc() {
+    if (!pc_changed) {
+      pc += 4;
+    }
+  }
 
   // Display register value
   void show_reg(unsigned int reg_num);
