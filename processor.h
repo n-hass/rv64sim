@@ -46,7 +46,7 @@ class processor {
 
   // Set PC to new value
   inline void set_pc(uint64_t new_pc) {
-    do_log("Setting pc to " + to_string(new_pc));
+    //do_log("Setting pc to " + to_string(new_pc));
     pc = new_pc - (new_pc % 2);
   }
 
@@ -63,7 +63,7 @@ class processor {
   // Set register to new value
   inline void set_reg(unsigned int reg_num, uint64_t new_value) {
     if (reg_num != 0) reg[reg_num] = new_value;
-    do_log("Setting x" + to_string(reg_num) + " to " + to_string(new_value));
+    //do_log("Setting x" + to_string(reg_num) + " to " + to_string(new_value));
   }
 
   // Execute a number of instructions

@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     #endif
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
-    do_log("Current working dir: " + string(cwd) + "\n");
+    //do_log("Current working dir: " + string(cwd) + "\n");
 
     // Values of command line options. 
     string arg;

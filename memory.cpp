@@ -53,7 +53,7 @@ uint64_t memory::read_doubleword (uint64_t address) {
   uintptr_t block;
   validate(address);
 
-  do_log("Memory read doubleword: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
+  //do_log("Memory read doubleword: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
   return *reinterpret_cast< uint64_t* > (block + (address % blockSize));
 }
 
@@ -64,7 +64,7 @@ uint32_t memory::read_word (uint64_t address) {
   uintptr_t block;
   validate(address);
 
-  do_log("Memory read word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
+  //do_log("Memory read word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
   return *reinterpret_cast< uint32_t* > (block + (address % blockSize));
 }
 
@@ -80,7 +80,7 @@ void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
 
   uint64_t* dw = reinterpret_cast< uint64_t* > (block + (address % blockSize));
   *dw = (*dw & ~mask) | (data & mask);
-  do_log("Memory doublewrite word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  //do_log("Memory doublewrite word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
@@ -92,7 +92,7 @@ void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
 
   uint32_t* dw = reinterpret_cast< uint32_t* > (block + (address % blockSize));
   *dw = (*dw & ~mask) | (data & mask);
-  do_log("Memory write word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  //do_log("Memory write word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 void memory::write_half(uint64_t address, uint64_t data, uint64_t mask) {
@@ -104,7 +104,7 @@ void memory::write_half(uint64_t address, uint64_t data, uint64_t mask) {
 
   uint16_t *mem = reinterpret_cast<uint16_t *>(block + (address % blockSize));
   *mem = (*mem & ~mask) | (data & mask);
-  do_log("Memory write half: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  //do_log("Memory write half: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 void memory::write_byte(uint64_t address, uint64_t data, uint64_t mask) {
@@ -115,7 +115,7 @@ void memory::write_byte(uint64_t address, uint64_t data, uint64_t mask) {
 
   uint16_t *mem = reinterpret_cast<uint16_t *>(block + (address % blockSize));
   *mem = (*mem & ~mask) | (data & mask);
-  do_log("Memory write byte: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  //do_log("Memory write byte: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 // Load a hex image file and provide the start address for execution from the file in start_address.
