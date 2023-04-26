@@ -1,5 +1,0 @@
-rv64sim.o: rv64sim.cpp memory.h processor.h LogControl.hpp commands.h
-commands.o: commands.cpp memory.h processor.h LogControl.hpp commands.h
-memory.o: memory.cpp memory.h LogControl.hpp
-processor.o: processor.cpp memory.h processor.h LogControl.hpp \
-  Instructions.h Bits.h
