@@ -14,7 +14,7 @@
 */
 #define USE_BITMASK(value, mask, shift) (((value) & (mask)) >> (shift))
 
-// Field extraction from a 32-bit RISC-V instruction in RV64
+// Field extraction from a RV64 RISC-V instructions
 #define EXTRACT_OPCODE_FROM_INST(value) ((value) & 0x7f)
 #define EXTRACT_FUNCT3_FROM_INST(value) (((value) >> 12) & 0x7)
 #define EXTRACT_FUNCT7_FROM_INST(value) (((value) >> 25) & 0x7f)

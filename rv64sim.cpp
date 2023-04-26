@@ -44,16 +44,16 @@ int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; i++) {
 	// Process the next option
 	arg = string(argv[i]);
-    // cout << "parsing arg: " << arg << endl;
 	if (arg == "-v")  // Verbose output
 	    verbose = true;
 	else if (arg == "-c")  // Cycle and instruction reporting enabled
 	    cycle_reporting = true;
 	else if (arg == "-s2")  // Stage 2 functionality enabled
 	    stage2 = true;
-	else if (arg.substr(0,9) == "--testHex"){
-	    testPath = arg.substr(10);
-        // cout << "reading from test file: "<< testPath<< "\n";
+	else if (arg == "--testHex"){
+	    testPath = string(argv[i+1]);
+        i++;
+        continue;
     }
 	else {
 	    cout << argv[0] << ": Unknown option: " << arg << endl;

@@ -80,7 +80,7 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
   if (pc == breakpoint && !alive) {
     cout << "Breakpoint reached at "; show_pc();
   }
-  vlog("Finished execution block" << std::hex << pc << std::endl);
+  vlog("Finished execution block at pc: " << std::hex << pc << std::endl);
 }
 
 void processor::step() {

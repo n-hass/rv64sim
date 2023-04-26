@@ -10,7 +10,7 @@ static std::stringstream LOG_SS;
         LOG_SS.str(std::string())
 
 #define do_stdout_log(message) LOG_SS << std::dec << message; \
-        cout << LOG_SS.str(); \
+        cout << LOG_SS.str() << endl; \
         LOG_SS.str(std::string())
 
 #ifdef LOGGING_ENABLED
