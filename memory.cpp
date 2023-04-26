@@ -19,18 +19,18 @@ using namespace std;
 
 #define validate(address) \
   index = address/blockSize; \
-  if (index == cached_block.first) { \
-    block = cached_block.second; \
+  if (index == cached_block_index) { \
+    block = cached_block_addr; \
   } \
   else if (mem_m.find(index) == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
     mem_m[index] = block; \
-    cached_block.first = index; \
-    cached_block.second = block; \
+    cached_block_index = index; \
+    cached_block_addr = block; \
   } else { \
     block = mem_m[index]; \
-    cached_block.first = index; \
-    cached_block.second = block; \
+    cached_block_index = index; \
+    cached_block_addr = block; \
   }
 //
 
@@ -46,19 +46,19 @@ using namespace std;
 
 #define validate_with_memset(address) \
   index = address/blockSize; \
-  if (index == cached_block.first) { \
-    block = cached_block.second; \
+  if (index == cached_block_index) { \
+    block = cached_block_addr; \
   } \
   else if (mem_m.find(index) == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
     memset((void*)block, 0, blockSize); \
     mem_m[index] = block; \
-    cached_block.first = index; \
-    cached_block.second = block; \
+    cached_block_index = index; \
+    cached_block_addr = block; \
   } else { \
     block = mem_m[index]; \
-    cached_block.first = index; \
-    cached_block.second = block; \
+    cached_block_index = index; \
+    cached_block_addr = block; \
   }
 //
 
@@ -76,8 +76,8 @@ using namespace std;
 // Constructor
 memory::memory(bool verbose) : mem_m() {
   this->verbose = verbose;
-  cached_block.first = -1;
-  cached_block.second = 0x00;
+  cached_block_index = -1;
+  cached_block_addr = 0x00;
 }
 
 // Read a doubleword of data from a doubleword-aligned address.

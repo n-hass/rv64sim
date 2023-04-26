@@ -28,8 +28,6 @@ using namespace std;
   }
 //
 
-// #define set_reg_m(reg_num, value) set_reg(reg_num, value)
-
 // Consructor
 processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->verbose = verbose;

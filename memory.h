@@ -14,12 +14,7 @@
 
 using namespace std;
 
-// #define blocksize 8192
-// #define blocksize 4096
 #define blockSize 2048
-// #define blockSize 1024
-// #define blockSize 512
-// #define blockSize 256
 
 class memory {
 
@@ -32,7 +27,9 @@ class memory {
 
   unordered_map<uint64_t, uintptr_t> mem_m;
   bool verbose;
-  std::pair<uint64_t, uintptr_t> cached_block;
+
+  uint64_t cached_block_index;
+  uintptr_t cached_block_addr;
   
  public:
 
