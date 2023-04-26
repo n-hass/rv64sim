@@ -19,28 +19,65 @@ using namespace std;
 
 #define validate(address) \
   index = address/blockSize; \
-  if (mem_m.find(index) == mem_m.end()) { \
+  if (index == cached_block.first) { \
+    block = cached_block.second; \
+  } \
+  else if (mem_m.find(index) == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
     mem_m[index] = block; \
+    cached_block.first = index; \
+    cached_block.second = block; \
   } else { \
     block = mem_m[index]; \
+    cached_block.first = index; \
+    cached_block.second = block; \
   }
+//
+
+// #define validate(address) \
+//   index = address/blockSize; \
+//   if (mem_m.find(index) == mem_m.end()) { \
+//     block = (uintptr_t)malloc(blockSize); \
+//     mem_m[index] = block; \
+//   } else { \
+//     block = mem_m[index]; \
+//   }
 //
 
 #define validate_with_memset(address) \
   index = address/blockSize; \
-  if (mem_m.find(index) == mem_m.end()) { \
+  if (index == cached_block.first) { \
+    block = cached_block.second; \
+  } \
+  else if (mem_m.find(index) == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
     memset((void*)block, 0, blockSize); \
     mem_m[index] = block; \
+    cached_block.first = index; \
+    cached_block.second = block; \
   } else { \
     block = mem_m[index]; \
+    cached_block.first = index; \
+    cached_block.second = block; \
   }
+//
+
+// #define validate_with_memset(address) \
+//   index = address/blockSize; \
+//   if (mem_m.find(index) == mem_m.end()) { \
+//     block = (uintptr_t)malloc(blockSize); \
+//     memset((void*)block, 0, blockSize); \
+//     mem_m[index] = block; \
+//   } else { \
+//     block = mem_m[index]; \
+//   }
 //
 
 // Constructor
 memory::memory(bool verbose) : mem_m() {
   this->verbose = verbose;
+  cached_block.first = -1;
+  cached_block.second = 0x00;
 }
 
 // Read a doubleword of data from a doubleword-aligned address.
@@ -48,12 +85,11 @@ memory::memory(bool verbose) : mem_m() {
 uint64_t memory::read_doubleword (uint64_t address) {
   address = address - (address % 8);
 
-  // uint64_t offset = address % blockSize;
   uint64_t index;
   uintptr_t block;
   validate(address);
 
-  //do_log("Memory read doubleword: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
+  vlog("Memory read doubleword: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
   return *reinterpret_cast< uint64_t* > (block + (address % blockSize));
 }
 
@@ -63,8 +99,9 @@ uint32_t memory::read_word (uint64_t address) {
   uint64_t index;
   uintptr_t block;
   validate(address);
+  
 
-  //do_log("Memory read word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
+  vlog("Memory read word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << *reinterpret_cast< uint64_t* > (block + (address % blockSize)));
   return *reinterpret_cast< uint32_t* > (block + (address % blockSize));
 }
 
@@ -80,7 +117,7 @@ void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
 
   uint64_t* dw = reinterpret_cast< uint64_t* > (block + (address % blockSize));
   *dw = (*dw & ~mask) | (data & mask);
-  //do_log("Memory doublewrite word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  vlog("Memory doublewrite word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
@@ -92,7 +129,7 @@ void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
 
   uint32_t* dw = reinterpret_cast< uint32_t* > (block + (address % blockSize));
   *dw = (*dw & ~mask) | (data & mask);
-  //do_log("Memory write word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  vlog("Memory write word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 void memory::write_half(uint64_t address, uint64_t data, uint64_t mask) {
@@ -104,7 +141,7 @@ void memory::write_half(uint64_t address, uint64_t data, uint64_t mask) {
 
   uint16_t *mem = reinterpret_cast<uint16_t *>(block + (address % blockSize));
   *mem = (*mem & ~mask) | (data & mask);
-  //do_log("Memory write half: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  vlog("Memory write half: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 void memory::write_byte(uint64_t address, uint64_t data, uint64_t mask) {
@@ -115,7 +152,7 @@ void memory::write_byte(uint64_t address, uint64_t data, uint64_t mask) {
 
   uint16_t *mem = reinterpret_cast<uint16_t *>(block + (address % blockSize));
   *mem = (*mem & ~mask) | (data & mask);
-  //do_log("Memory write byte: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
+  vlog("Memory write byte: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
 // Load a hex image file and provide the start address for execution from the file in start_address.

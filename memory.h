@@ -27,6 +27,7 @@ class memory {
 
   unordered_map<uint64_t, uintptr_t> mem_m;
   bool verbose;
+  std::pair<uint64_t, uintptr_t> cached_block;
   
  public:
 

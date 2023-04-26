@@ -21,18 +21,13 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    #ifdef FullLogger
-        Logger* logger = new Logger();
-        logger->start("./","sim.log");
-        logger->globalise();
-    #else
+    #ifdef LOGGING_ENABLED
         std::ofstream ofs;
         ofs.open(LOGFILENAME, std::ofstream::out | std::ofstream::trunc);
         ofs.close();
     #endif
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
-    //do_log("Current working dir: " + string(cwd) + "\n");
 
     // Values of command line options. 
     string arg;

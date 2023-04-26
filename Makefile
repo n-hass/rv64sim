@@ -5,6 +5,11 @@ CPPFLAGS=-g -std=c++11 -Wall -pedantic -Wno-c++14-binary-literal
 LDFLAGS=-g
 LDLIBS=
 
+ifdef LOGGING
+CPPFLAGS+= -DLOGGING_ENABLED
+LDFLAGS+= -DLOGGING_ENABLED
+endif
+
 SRCS=rv64sim.cpp commands.cpp memory.cpp processor.cpp  
 OBJS=$(subst .cpp,.o,$(SRCS))
 

@@ -30,7 +30,7 @@ processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->mem = main_memory;
   this->pc = 0;
   this->breakpoint = NO_BREAKPOINT;
-  memset(reg, 0, sizeof(uint64_t)*32);
+  memset(reg, 0, sizeof(int64_t)*32);
 }
 
 // Display PC value
@@ -71,9 +71,9 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
 
   // this only runs when the program has finished executing
   if (pc == breakpoint && !alive) {
-    cout << "Breakpoint reached at ";    show_pc();
+    cout << "Breakpoint reached at "; show_pc();
   }
-  // //do_log("Finished execution block" << std::hex << pc << std::endl);
+  vlog("Finished execution block" << std::hex << pc << std::endl);
 }
 
 void processor::step() {
@@ -99,18 +99,16 @@ void processor::step() {
   switch (rv64::opcode(opcode)) {
 
     case rv64::opcode::lui_op:
-      //do_log("LUI at PC: " << pc);
+      vlog("LUI at PC: " << pc);
       rd = EXTRACT_RD_FROM_INST(inst);
       set_reg(rd, static_cast<int64_t>(static_cast<int32_t>(inst & 0xFFFFF000)));
-      //do_log("lui x"<<(unsigned int)rd<<", "<<static_cast<int64_t>(static_cast<int32_t>(inst & 0xFFFFF000)>>12));
+      vlog("lui x"<<(unsigned int)rd<<", "<<static_cast<int64_t>(static_cast<int32_t>(inst & 0xFFFFF000)>>12));
     break;
 
     case rv64::opcode::auipc_op:
-      //do_log("AUIPC at " << pc);
+      vlog("AUIPC at " << pc);
       rd = EXTRACT_RD_FROM_INST(inst);
       set_reg(rd, static_cast<int64_t>(pc) + static_cast<int64_t>( static_cast<int32_t>(inst & 0xFFFFF000) ));
-      // reg[rd] = static_cast<int64_t>(pc) + static_cast<int64_t>( static_cast<int32_t>(inst) >> 12 ); // cast imm[31:12] to a signed 64-bit value
-      // reg[rd] = static_cast<int64_t>(pc) + (static_cast<int64_t>((static_cast<uint64_t>(inst) & 0xFFFFF000) << 32) >> 32); // upper 20 bits sign extended to a doubleword
     break;
   
     case rv64::opcode::imm_op:
@@ -121,34 +119,33 @@ void processor::step() {
 
       switch (rv64::imm_funct3(funct3)) {
         case rv64::imm_funct3::addi_f3:
-          //do_log("ADDI at PC: " << pc);
+          vlog("ADDI at PC: " << pc);
           set_reg(rd, reg[rs1] + imm);
-          // //do_log("addi "<<(unsigned int)rd<<", "<<(unsigned int)rs1<<", "<<imm);
-          //do_log("x"<<(unsigned int)rd<<" = "<<(unsigned int)reg[rs1]<<" + "<<imm);
+          vlog("x"<<(unsigned int)rd<<" = "<<(unsigned int)reg[rs1]<<" + "<<imm);
         break;
 
         case rv64::imm_funct3::slti_f3:
-          //do_log("SLTI at " << pc);
+          vlog("SLTI at " << pc);
           set_reg(rd, (static_cast<int64_t>(reg[rs1]) < imm) ? 1 : 0);
         break;
 
         case rv64::imm_funct3::sltiu_f3:
-          //do_log("SLTIU at " << pc);
+          vlog("SLTIU at " << pc);
           set_reg(rd, (uint64_t(reg[rs1]) < uint64_t(imm)) ? 1 : 0);
         break;
 
         case rv64::imm_funct3::xori_f3:
-          //do_log("XORI at " << pc);
+          vlog("XORI at " << pc);
           set_reg(rd, reg[rs1] ^ imm);
         break;
 
         case rv64::imm_funct3::ori_f3:
-          //do_log("ORI at " << pc); 
+          vlog("ORI at " << pc); 
           set_reg(rd, reg[rs1] | imm);
         break;
         
         case rv64::imm_funct3::andi_f3:
-          //do_log("ANDI at " << pc);
+          vlog("ANDI at " << pc);
           set_reg(rd, reg[rs1] & imm);
         break;
 
@@ -159,22 +156,22 @@ void processor::step() {
           // NOTE: in RV64, rs2 includes bit 25. RV32 just uses same field as rs2
           rs2 = EXTRACT_SHAMT64_FROM_INST(inst);
           
-          // NOT actually funct7_3, drops bit 25
+          // NOT actually funct7_3, drops bit 25 as its used by shamt64
           funct7_3 = (USE_BITMASK(inst, 0xFC000000, 23)) | USE_BITMASK(inst, 0x00007000, 12);
           
           switch (rv64::imm_funct9(funct7_3)) {
             case rv64::imm_funct9::slli_f73:
-              //do_log("SLLI at " << pc);
+              vlog("SLLI at " << pc);
               set_reg(rd, reg[rs1] << rs2);
             break;
 
             case rv64::imm_funct9::srli_f73:
-              //do_log("SRLI at " << pc);
+              vlog("SRLI at " << pc);
               set_reg(rd, (((uint64_t)reg[rs1]) >> rs2));
             break;
 
             case rv64::imm_funct9::srai_f73:
-              //do_log("SRAI at " << pc);
+              vlog("SRAI at " << pc);
               set_reg(rd, static_cast<int64_t>(reg[rs1]) >> rs2);
             break;
           }
@@ -191,54 +188,54 @@ void processor::step() {
 
       switch (rv64::reg_funct73(funct7_3)) {
         case rv64::reg_funct73::add_f:
-          //do_log("ADD at " << pc);
+          vlog("ADD at " << pc);
           set_reg(rd, reg[rs1] + reg[rs2]);
         break;
 
         case rv64::reg_funct73::sub_f:
-          //do_log("SUB at " << pc);
+          vlog("SUB at " << pc);
           set_reg(rd, reg[rs1] - reg[rs2]);
         break;
 
         case rv64::reg_funct73::sll_f:
-          //do_log("SLL at " << pc);
+          vlog("SLL at " << pc);
           set_reg(rd, reg[rs1] << reg[rs2]);
         break;
 
         case rv64::reg_funct73::slt_f:
-          //do_log("SLT at " << pc);
+          vlog("SLT at " << pc);
           set_reg(rd, (static_cast<int64_t>(reg[rs1]) < static_cast<int64_t>(reg[rs2])) ? 1 : 0);
         break;
 
         case rv64::reg_funct73::sltu_f:
-          //do_log("SLTU at " << pc);
+          vlog("SLTU at " << pc);
           set_reg(rd, (static_cast<uint64_t>(reg[rs1]) < static_cast<uint64_t>(reg[rs2])) ? 1 : 0);
         break;
 
         case rv64::reg_funct73::xor_f:
-          //do_log("XOR at " << pc);
+          vlog("XOR at " << pc);
           set_reg(rd, reg[rs1] ^ reg[rs2]);
         break;
 
         case rv64::reg_funct73::srl_f:
-          //do_log("SRL at " << pc);
+          vlog("SRL at " << pc);
           set_reg(rd, uint64_t((uint64_t)reg[rs1] >> reg[rs2]));
           // reg[rd] = reg[rs1] >> reg[rs2];
         break;
 
         case rv64::reg_funct73::sra_f:
-          //do_log("SRA at " << pc);
+          vlog("SRA at " << pc);
           set_reg(rd, static_cast<int64_t>(reg[rs1]) >> reg[rs2]);
           
         break;
 
         case rv64::reg_funct73::or_f:
-          //do_log("OR at " << pc);
+          vlog("OR at " << pc);
           set_reg(rd, reg[rs1] | reg[rs2]);
         break;
 
         case rv64::reg_funct73::and_f:
-          //do_log("AND at " << pc);
+          vlog("AND at " << pc);
           set_reg(rd, reg[rs1] & reg[rs2]);
         break;
       }
@@ -247,17 +244,16 @@ void processor::step() {
 
     case rv64::opcode::fen_op:
       // do nothing in stage 1
-      //do_log("fence operations decoded but not implemented");
       // stage 2:
       funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
       switch(rv64::fen_funct3(funct3)) {
         case rv64::fen_funct3::fence_f:
-          // do nothing in stage 2
-          //do_log("fence operation decoded but not implemented");
+          // do nothing in stage 1
+          vlog("fence operation decoded but not implemented");
         break;
         case rv64::fen_funct3::fence_i_f:
-          // do nothing in stage 2
-          //do_log("fence.i operation decoded but not implemented");
+          // do nothing in stage 1
+          vlog("fence.i operation decoded but not implemented");
         break;
       }
     break;
@@ -280,7 +276,7 @@ void processor::step() {
       rd = EXTRACT_RD_FROM_INST(inst);
       address = reg[rs1] + imm;
 
-      //do_log("load_op: address = " << address);
+      vlog("load_op: address = " << address);
       
       funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
       switch (rv64::load_funct3(funct3)){
@@ -290,7 +286,7 @@ void processor::step() {
 
           dwa = mem->read_doubleword(address);
           set_reg(rd, int64_t((uint64_t((dwa >> (offset*8))) & 0xFF) << 56) >> 56);
-          //do_log("lb x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("lb x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lh_f:
@@ -298,23 +294,23 @@ void processor::step() {
 
           dwa = mem->read_doubleword(address);
           set_reg(rd, int64_t((uint64_t((dwa >> (offset*8))) & 0xFFFF) << 48) >> 48);
-          //do_log("lh x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("lh x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lw_f:
           dwa = int32_t(mem->read_word(address));
-          set_reg(rd, int64_t(uint64_t(dwa) << 32) >> 32);
-          //do_log("lw x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          set_reg(rd, int64_t(int32_t(dwa)));
+          vlog("lw x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::ld_f:
-          //do_log("LD at " << pc);
+          vlog("LD at " << pc);
           if (address % 4 != 0) {
             cout << "Error: misaligned address for ld" << endl;
           }
           dwa = mem->read_doubleword(address);
           set_reg(rd, dwa);
-          //do_log("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lbu_f:
@@ -326,7 +322,7 @@ void processor::step() {
             set_reg(rd, (uint64_t)((dwa >> (offset*8)) & 0xFF));
           }
           
-          //do_log("lbu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("lbu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lhu_f:
@@ -337,13 +333,13 @@ void processor::step() {
           } else {
             set_reg(rd, (uint64_t)((dwa >> (offset*8)) & 0xFFFF));
           }
-          //do_log("lhu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("lhu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lwu_f:
           dwa = uint32_t(mem->read_word(address));
           set_reg(rd, dwa);
-          //do_log("lwu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("lwu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
       }
 
@@ -361,34 +357,29 @@ void processor::step() {
 
         case (rv64::store_funct3::sb_f):
           mem->write_byte(address, reg[rs2], 0xFF);
-          //do_log("sb x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("sb x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case (rv64::store_funct3::sh_f):
           mem->write_half(address, reg[rs2], 0xFFFF);
-          //do_log("sh x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("sh x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case (rv64::store_funct3::sw_f):
           mem->write_word(address, reg[rs2], ~0UL);
-          //do_log("sw x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("sw x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case (rv64::store_funct3::sd_f):
           mem->write_doubleword(address, reg[rs2], ~0ULL);
-          //do_log("sd x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          vlog("sd x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
       }
 
     break;
 
     case rv64::opcode::jal_op:
-      //do_log("JAL at " << pc);
-      // imm = USE_BITMASK(inst, 0x80000000, 11) | USE_BITMASK(inst, 0x7FE00000, 20) | USE_BITMASK(inst, 0x00100000, 9) | USE_BITMASK(inst, 0x000FF000, 8);
-      // imm = (int32_t)(((((inst) >> 21) & ((1 << 10) - 1)) << 1) |
-      //                ((((inst) >> 20) & ((1 << 1) - 1)) << 11) |
-      //                ((((inst) >> 12) & ((1 << 8) - 1)) << 12) |
-      //                ((-(((inst) >> 31) & 1)) << 20));
+      vlog("JAL at " << pc);
       imm = EXTRACT_JAL_OFFSET_FROM_INST(inst);
       rd = EXTRACT_RD_FROM_INST(inst);
       set_reg(rd, pc + 4);
@@ -397,7 +388,7 @@ void processor::step() {
     break;
 
     case rv64::opcode::jalr_op:
-      //do_log("JALR at " << pc);
+      vlog("JALR at " << pc);
       imm = EXTRACT_IMM12_FROM_INST(inst);
       rs1 = EXTRACT_RS1_FROM_INST(inst);
       rd = EXTRACT_RD_FROM_INST(inst);
@@ -425,48 +416,48 @@ void processor::step() {
 
       switch (rv64::branch_funct3(funct3)) {
         case rv64::branch_funct3::beq_f:
-          //do_log("BEQ at " << pc);
           if (reg[rs1] == reg[rs2]) {
+            vlog("taking BEQ at " << pc);
             pc = pc + imm;
             pc_changed = true;
           }
         break;
 
         case rv64::branch_funct3::bne_f:
-          //do_log("BNE at " << pc);
           if (reg[rs1] != reg[rs2]) {
+            vlog("taking BNE at " << pc);
             pc = pc + imm;
             pc_changed = true;
           }
         break;
 
         case rv64::branch_funct3::blt_f:
-          //do_log("BLT at " << pc);
           if (reg[rs1] < reg[rs2]) {
+            vlog("taking BLT at " << pc);
             pc = pc + imm;
             pc_changed = true;
           }
         break;
 
         case rv64::branch_funct3::bge_f:
-          //do_log("BGE at " << pc);
           if (reg[rs1] >= reg[rs2]) {
+            vlog("taking BGE at " << pc);
             pc = pc + imm;
             pc_changed = true;
           }
         break;
 
         case rv64::branch_funct3::bltu_f:
-          //do_log("BLTU at " << pc);
           if ((uint64_t)reg[rs1] < (uint64_t)reg[rs2]) {
+            vlog("taking BLTU at " << pc);
             pc = pc + imm;
             pc_changed = true;
           }
         break;
 
         case rv64::branch_funct3::bgeu_f:
-          //do_log("BGEU at " << pc);
           if ((uint64_t)reg[rs1] >= (uint64_t)reg[rs2]) {
+            vlog("taking BGEU at " << pc);
             pc = pc + imm;
             pc_changed = true;
           }
@@ -482,13 +473,13 @@ void processor::step() {
       
       switch (rv64::imm64_funct3(funct3)) {
         case rv64::imm64_funct3::addiw_f3:
-          //do_log("ADDIW at " << pc);
+          vlog("ADDIW at " << pc);
           imm = EXTRACT_IMM12_FROM_INST(inst);
-          set_reg(rd, int64_t(uint64_t(int64_t(reg[rs1]) + imm) << 32) >> 32);
+          set_reg(rd, int64_t(int32_t(int32_t(reg[rs1]) + imm)));
         break;
 
         case rv64::imm64_funct3::slliw_f3:
-          //do_log("SLLIW at " << pc);
+          vlog("SLLIW at " << pc);
           // shamt is rs2
           rs2 = EXTRACT_SHAMT32_FROM_INST(inst);
           set_reg(rd, (int32_t)reg[rs1] << rs2 );
@@ -501,12 +492,12 @@ void processor::step() {
 
           switch (rv64::imm64_funct7(funct7_3)) {
             case rv64::imm64_funct7::srliw_f7: 
-              //do_log("SRLIW at " << pc);
+              vlog("SRLIW at " << pc);
               set_reg(rd, (int64_t)((int32_t)(((uint32_t)reg[rs1]) >> rs2)) );
             break;
 
             case rv64::imm64_funct7::sraiw_f7:
-              //do_log("SRAIW at " << pc);
+              vlog("SRAIW at " << pc);
               set_reg(rd, int64_t ( ((int32_t)reg[rs1]) >> rs2) );
             break;
           }
@@ -526,39 +517,29 @@ void processor::step() {
       switch (rv64::reg64_funct73(funct7_3)) {
 
         case rv64::reg64_funct73::addw_f:
-          set_reg(rd, int64_t(
-                            uint64_t( int32_t(reg[rs1]) + int32_t(reg[rs2]) ) << 32
-                           ) >> 32);
+          set_reg(rd, int64_t(int32_t( int32_t(reg[rs1]) + int32_t(reg[rs2]) )));
         break;
 
         case rv64::reg64_funct73::subw_f:
-          set_reg(rd, int64_t(
-                            uint64_t( int32_t(reg[rs1]) - int32_t(reg[rs2]) ) << 32
-                           ) >> 32);
+          set_reg(rd, int64_t(int32_t( int32_t(reg[rs1]) - int32_t(reg[rs2]) )));
         break;
 
         case rv64::reg64_funct73::sllw_f:
-          set_reg(rd, (int64_t(
-                            uint32_t(reg[rs1]) << (reg[rs2] & 0x1F)) << 32)
-                            >> 32);
+          set_reg(rd, (int64_t(int32_t(reg[rs1]) << (reg[rs2] & 0x1F))));
         break;
 
         case rv64::reg64_funct73::srlw_f:
-          set_reg(rd, (int64_t(
-                            uint32_t(reg[rs1]) >> (reg[rs2] & 0x1F)) << 32)
-                            >> 32);
+          set_reg(rd, (int64_t(int32_t(uint32_t(reg[rs1]) >> (reg[rs2] & 0x1F)))));
         break;
 
         case rv64::reg64_funct73::sraw_f:
-          set_reg(rd, (int64_t(
-                            int32_t(reg[rs1]) >> (reg[rs2] & 0x1F)) << 32)
-                            >> 32);
+          set_reg(rd, (int64_t(int32_t(int32_t(reg[rs1]) >> (reg[rs2] & 0x1F)))));
         break;
       }
     break;
 
     default:
-      //do_log("Unknown instruction at " << pc);
+      vlog("Unknown instruction at " << pc);
       std::cout << "Illegal instruction at " << pc << std::endl;
     break;
 
@@ -572,7 +553,7 @@ void processor::clear_breakpoint() {
 
 void processor::set_breakpoint(uint64_t addr) {
   breakpoint = addr;
-  //do_log("Breakpoint set at " << std::hex << addr);
+  vlog("Breakpoint set at " << std::hex << addr);
 }
 
 void processor::show_prv() {
