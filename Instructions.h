@@ -1,5 +1,4 @@
-#ifndef INSTRUCTION_DEFS_H
-#define INSTRUCTION_DEFS_H
+#pragma once
 namespace rv64 {
   // opcode 
   enum opcode {
@@ -104,5 +103,3 @@ namespace rv64 {
     sraw_f = 0x105
   };
 }
-
-#endif
