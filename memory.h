@@ -14,7 +14,12 @@
 
 using namespace std;
 
+// #define blocksize 8192
+// #define blocksize 4096
 #define blockSize 2048
+// #define blockSize 1024
+// #define blockSize 512
+// #define blockSize 256
 
 class memory {
 
