@@ -1,0 +1,17 @@
+#!/bin/bash
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+for i in *.log; do
+  if [[ $i != *-v.log && $i != sim.log ]]; then
+    OUT=$(diff --strip-trailing-cr $i expected/$i)
+    ret=$?
+    if [ "$OUT" != "" ]; then
+      printf "\n${RED}${i}${NC}\n"
+      echo "$OUT"
+    elif [ $ret -eq 0 ]; then
+      printf "\n${GREEN}${i}${NC}\n"
+    fi
+  fi
+done
