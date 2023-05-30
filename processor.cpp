@@ -596,3 +596,11 @@ uint64_t processor::get_instruction_count() {
 uint64_t processor::get_cycle_count() {
   return cycle_count;
 }
+
+void processor::exception(uint64_t cause, uint64_t inst) {
+  vlog("Exception cause: " << cause << "at " << std::hex << pc << ", instruction = " << inst);
+
+  uint64_t pc_0 = pc;
+
+  
+}

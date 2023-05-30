@@ -1,13 +1,18 @@
 CC=gcc
 CXX=g++
 RM=rm -rf
-CPPFLAGS=-g -std=c++11 -Wall -pedantic -O3
-LDFLAGS=-g -O3
+CPPFLAGS=-g -std=c++11 -Wall -pedantic
+LDFLAGS=-g
 LDLIBS=
 
 ifdef LOGGING
 CPPFLAGS+= -DLOGGING_ENABLED
 LDFLAGS+= -DLOGGING_ENABLED
+endif
+
+ifdef OPT
+CPPFLAGS+= -O3
+LDFLAGS+= -O3
 endif
 
 SRCS=rv64sim.cpp commands.cpp memory.cpp processor.cpp  
@@ -28,9 +33,7 @@ clean:
 	$(RM) $(OBJS) *.dSYM sim.log
 	$(RM) tests/*_tests/*.log
 
-
-
 dist-clean: clean
-	$(RM) *~ .dependtool
+	$(RM) *~ .dependtool rv64sim
 
 include .depend

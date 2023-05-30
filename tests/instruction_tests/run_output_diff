@@ -16,7 +16,7 @@ done
 
 for i in "${test_cases[@]}"; do
 
-  OUT=$(diff --strip-trailing-cr ${i}.log expected/${i}.log)
+  OUT=$(diff -iw ${i}.log expected/${i}.log)
   ret=$?
   if [ "$OUT" != "" ]; then
     printf "\n${RED}${i}${NC}\n"

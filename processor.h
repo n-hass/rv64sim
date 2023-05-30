@@ -36,6 +36,10 @@ class processor {
   // uint8_t prv; // privilege level
   // uint64_t csr[4096]; // CSR registers
 
+
+  // Exception handling
+  void exception(uint64_t cause, uint64_t inst);
+
  public:
 
   // Consructor

@@ -19,16 +19,17 @@ using namespace std;
 
 #define validate(address) \
   index = address/blockSize; \
+  auto temp_find = mem_m.find(index); \
   if (index == cached_block_index) { \
     block = cached_block_addr; \
   } \
-  else if (mem_m.find(index) == mem_m.end()) { \
+  else if (temp_find == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
     mem_m[index] = block; \
     cached_block_index = index; \
     cached_block_addr = block; \
   } else { \
-    block = mem_m[index]; \
+    block = temp_find->second; \
     cached_block_index = index; \
     cached_block_addr = block; \
   }
@@ -46,17 +47,18 @@ using namespace std;
 
 #define validate_with_memset(address) \
   index = address/blockSize; \
+  auto temp_find = mem_m.find(index); \
   if (index == cached_block_index) { \
     block = cached_block_addr; \
   } \
-  else if (mem_m.find(index) == mem_m.end()) { \
+  else if (temp_find == mem_m.end()) { \
     block = (uintptr_t)malloc(blockSize); \
     memset((void*)block, 0, blockSize); \
     mem_m[index] = block; \
     cached_block_index = index; \
     cached_block_addr = block; \
   } else { \
-    block = mem_m[index]; \
+    block = temp_find->second; \
     cached_block_index = index; \
     cached_block_addr = block; \
   }
