@@ -1,0 +1,16 @@
+#! /bin/bash
+
+if [ -f "$1.cmd" ]; then
+  ../../rv64sim -s2 ${RV64SIM_FLAGS} < ${1}.cmd > ${1}${RV64SIM_FLAGS// /}.log
+
+  OUT=$(diff --strip-trailing-cr ${1}${RV64SIM_FLAGS// /}.log expected/${1}${RV64SIM_FLAGS// /}.log)
+  ret=$?
+  if [ "$OUT" != "" ]; then
+    printf "\n${RED}${i}${NC}\n"
+    echo "$OUT"
+  elif [ $ret -eq 0 ]; then
+    printf "\n${GREEN}${i}${NC}\n"
+  else
+    printf "${RED}Missing: ${i}${NC}\n"
+  fi
+fi

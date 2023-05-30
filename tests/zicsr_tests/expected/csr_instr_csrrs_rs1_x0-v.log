@@ -1,0 +1,7 @@
+Memory write doubleword: address = 0000000000000000, data = 00000000f1302173, mask = ffffffffffffffff
+Memory read doubleword: address = 0000000000000000, data = 00000000f1302173
+Fetch: pc = 0000000000000000, ir = f1302173
+csrrs: rd = 2, rs1 = 0, csr_num = f13
+2018020000000000
+2018020000000000
+Instructions executed: 1

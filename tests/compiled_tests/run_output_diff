@@ -8,7 +8,7 @@ test_cases=()
 for file in expected/*; do
   if [[ -f "$file" ]]; then
     base="$(basename "$file" | rev | cut -d. -f2- | rev)"
-    if [[ "$base" != *"-c" ]]; then
+    if [[ "$base" != *"-c" && "$base" != *"-v" ]]; then
       test_cases+=("$base")
     fi
   fi
@@ -23,6 +23,8 @@ for i in "${test_cases[@]}"; do
     echo "$OUT"
   elif [ $ret -eq 0 ]; then
     printf "\n${GREEN}${i}${NC}\n"
+  else
+    printf "\n${RED}Missing: ${i}${NC}\n"
   fi
   
 done

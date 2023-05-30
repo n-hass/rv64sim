@@ -28,6 +28,8 @@ clean:
 	$(RM) $(OBJS) *.dSYM sim.log
 	$(RM) tests/*_tests/*.log
 
+
+
 dist-clean: clean
 	$(RM) *~ .dependtool
 
