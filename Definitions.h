@@ -102,4 +102,47 @@ namespace rv64 {
     srlw_f = 0x05,
     sraw_f = 0x105
   };
+  enum zicsr_funct12 {
+    csrrw_f = 0x01,
+    csrrs_f = 0x02,
+    csrrc_f = 0x03,
+    csrrwi_f = 0x05,
+    csrrsi_f = 0x06,
+    csrrci_f = 0x07
+  };
+
+  enum except {
+    pc_misaligned = 0,
+    illegal_instruction = 2,
+    breakpoint = 3,
+    load_address_misaligned = 4,
+    store_address_misaligned = 6,
+    ecall_from_u = 8,
+    ecall_from_m = 11
+  };
+
+  enum interrupt {
+    user_software = 0,
+    machine_software = 3,
+    user_timer = 4,
+    machine_timer = 7,
+    user_external = 8,
+    machine_external = 11
+  };
+
+  enum csr {
+    mvendorid = 0xF11,
+    marchid = 0xF12,
+    mimpid = 0xF13,
+    mhartid = 0xF14,
+    mstatus = 0x300,
+    misa = 0x301,
+    mie = 0x304,
+    mtvec = 0x305,
+    mscratch = 0x340,
+    mepc = 0x341,
+    mcause = 0x342,
+    mtval = 0x343,
+    mip = 0x344
+  };
 }

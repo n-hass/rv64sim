@@ -11,7 +11,9 @@
 
 #include "memory.h"
 #include <string>
+#include <unordered_map>
 #include "LogControl.hpp"
+#include "Definitions.h"
 
 using namespace std;
 
@@ -23,6 +25,7 @@ class processor {
   bool verbose;
   bool stage2;
   memory* mem;
+
   uint64_t pc;
   int64_t reg[32];
   uint64_t breakpoint;
@@ -32,13 +35,16 @@ class processor {
   bool pc_changed;
   bool alive;
 
-  // functionally irrelevant for stage 1:
-  // uint8_t prv; // privilege level
-  // uint64_t csr[4096]; // CSR registers
-
+  // functionally for stage 2:
+  uint8_t prv; // privilege level
+  uint64_t csr[836]; // the CSR registers, only need 836 to hash the csr's which we implement
+  // unordered_map<uint16_t, uint64_t> csr; // map csr's to their index
+  
 
   // Exception handling
-  void exception(uint64_t cause, uint64_t inst);
+  void exception(uint64_t cause, uint32_t inst);
+
+  void interrupt(uint64_t cause);
 
  public:
 

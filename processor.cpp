@@ -16,11 +16,12 @@
 
 #include "memory.h"
 #include "processor.h"
-#include "Instructions.h"
+#include "Definitions.h"
 #include "LogControl.hpp"
 #include "Bits.h"
 
 using namespace std;
+using rv64::csr;
 
 #define set_reg_m(reg_num, value) \
   if ((reg_num) != 0) { \
@@ -33,9 +34,31 @@ processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->verbose = verbose;
   this->stage2 = stage2;
   this->mem = main_memory;
+  
+  // initial states
   this->pc = 0;
   this->breakpoint = NO_BREAKPOINT;
+  this->pc_changed = false;
+  this->instruction_count = 0;
   memset(reg, 0, sizeof(int64_t)*32);
+  this->prv = 3;
+  
+  // initialise the CSRs
+  this->csr[0xf11] = 0x00;               // mvendorid
+  this->csr[0xf12] = 0x00;               // marchid
+  this->csr[0xf13] = 0x2023020000000000; // mimpid
+  this->csr[0xf14] = 0x00;               // mhartid
+  this->csr[0x300] = 0x0000000200000000; // mstatus
+  this->csr[0x301] = 0x8000000000100100; // misa
+  this->csr[0x304] = 0x00;               // mie
+  this->csr[0x305] = 0x00;               // mtvec
+  this->csr[0x340] = 0x00;               // mscratch
+  this->csr[0x341] = 0x00;               // mepc
+  this->csr[0x342] = 0x00;               // mcause
+  this->csr[0x343] = 0x00;               // mtval
+  this->csr[0x344] = 0x00;               // mip
+
+
 }
 
 // Display PC value
@@ -61,8 +84,30 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
     }
 
     if (pc % 4 != 0) {
-      cout << "Error: misaligned pc" << endl;
-      return;
+      // cout << "Error: misaligned pc" << endl;
+      exception(0, 0);
+    } else {
+      // check for interrupts in order of priority
+      if ( (csr[csr::mstatus] & 0x8) || prv == 0) {
+        if (EXTRACT_BIT(csr[csr::mie], 11) & EXTRACT_BIT(csr[csr::mip], 11)) {
+          interrupt(rv64::interrupt::machine_external);
+        } 
+        else if (EXTRACT_BIT(csr[csr::mie], 3) & EXTRACT_BIT(csr[csr::mip], 3)) {
+          interrupt(rv64::interrupt::machine_software);
+        } 
+        else if (EXTRACT_BIT(csr[csr::mie], 7) & EXTRACT_BIT(csr[csr::mip], 7)) {
+          interrupt(rv64::interrupt::machine_timer);
+        }
+        else if (EXTRACT_BIT(csr[csr::mie], 8) & EXTRACT_BIT(csr[csr::mip], 8)) {
+          interrupt(rv64::interrupt::user_external);
+        }
+        else if ((csr[csr::mie] & 0x1) & (csr[csr::mip] & 0x1) ) {
+          interrupt(rv64::interrupt::user_software);
+        }
+        else if (EXTRACT_BIT(csr[csr::mie], 4) & EXTRACT_BIT(csr[csr::mip], 4)) {
+          interrupt(rv64::interrupt::user_timer);
+        }
+      }
     }
 
     pc_changed = false;
@@ -83,7 +128,7 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
 
 void processor::step() {
   uint64_t inst = mem->read_doubleword(pc);
-  if (pc % 8 != 0) inst = inst >> 32; // adjust for the next instruction in the dword
+  if (pc % 8 != 0) inst = inst >> 32;   // adjust for next instruction in the doubleword
 
   uint8_t opcode = EXTRACT_OPCODE_FROM_INST(inst);
 
@@ -578,15 +623,84 @@ void processor::show_prv() {
 }
 
 void processor::set_prv(uint8_t prv) {
-  // this->prv = prv;
+  this->prv = prv;
 }
 
 void processor::show_csr(unsigned int csr_num) {
-  // std::cout << "CSR " << csr_num << " = " << csr[csr_num] << std::endl;
+  switch (csr_num) {
+    case csr::mvendorid:
+    case csr::marchid:
+    case csr::mimpid:
+    case csr::mhartid:
+    case csr::mstatus:
+    case csr::misa:
+    case csr::mie:
+    case csr::mtvec:
+    case csr::mscratch:
+    case csr::mepc:
+    case csr::mcause:
+    case csr::mtval:
+    case csr::mip:
+      cout << setw(16) << setfill('0') << hex << csr[csr_num] << endl;
+      break;
+
+    default:
+      cout << "Illegal CSR number" << endl;
+      break;
+  }
+
+
+  cout << "CSR " << csr_num << " = " << csr[csr_num] << endl;
+  
 }
 
 void processor::set_csr(unsigned int csr_num, uint64_t value) {
-  // csr[csr_num] = value;
+
+  // apply the writable rules to the input value
+  switch (csr_num) {
+    case csr::mstatus:
+      value = value & 0x1888;
+      value = value | 0x200000000;
+      break;
+    case csr::misa:
+      value = value & 0x8000000000100100;
+      break;
+    case csr::mie:
+    case csr::mip:
+      value = value & 0x999;
+      break;
+    case csr::mtvec:
+      if (value & 0x1) {
+        // direct mode
+        value = value & 0xfffffffffffffffc;
+      } else {
+        // vectored mode
+        value = value & 0xffffffffffffff01;
+      }
+      break;
+    case csr::mepc:
+      value = value & 0xfffffffffffffffc;
+      break;
+    case csr::mcause:
+      value = value & 0x800000000000000f;
+      break;
+    case csr::mtval:
+    case csr::mscratch:
+      break;
+
+    case csr::mvendorid:
+    case csr::marchid:
+    case csr::mimpid:
+    case csr::mhartid:
+      cout<<"Illegal write to read-only CSR"<<endl;
+      return;
+
+    default:
+      cout<<"Invalid CSR"<<endl;
+      return;
+  }
+
+  csr[csr_num] = value;
 }
 
 uint64_t processor::get_instruction_count() {
@@ -597,10 +711,159 @@ uint64_t processor::get_cycle_count() {
   return cycle_count;
 }
 
-void processor::exception(uint64_t cause, uint64_t inst) {
-  vlog("Exception cause: " << cause << "at " << std::hex << pc << ", instruction = " << inst);
+void processor::exception(uint64_t cause, uint32_t inst) {
+  vlog("Exception: " << cause << ", at: " << std::hex << pc << ", instruction = " << inst);
 
-  uint64_t pc_0 = pc;
+  uint64_t pc_0 = this->pc;
 
-  
+  // store the original pc that caused the exception
+  csr[csr::mepc] = pc_0;
+
+  set_csr(csr::mcause, cause);
+
+  // set pc to the address of the exception handler
+  if (csr[csr::mtvec] & 0x1) {
+    // direct mode
+    pc = csr[csr::mtvec] & ~0x1;
+  } else {
+    // vectored mode
+    pc = (csr[csr::mtvec] & ~0x1) + ( (cause & 0x1) << 2);
+  }
+
+  // set mstatus based on privelage level
+  if (prv == 3) {
+
+    // mpp = 0b11
+    csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
+
+    // mpie = 0b0
+    csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
+
+  } 
+  else if (prv == 0) {
+
+    // mpp = 0b0
+    csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
+
+    // set mpie
+    if (csr[csr::mstatus] & 0x8) {
+      // mpie = 1
+      csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+    } else {
+      // mpie = 0
+      csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
+    }
+
+    // mie = 0b0
+    csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+  }
+
+  switch (cause) {
+    case rv64::except::pc_misaligned:
+      instruction_count++;
+      this->pc += 4;
+      // set mtval to the original misaligned pc
+      set_csr(csr::mtval, pc_0);
+      break;
+    
+    case rv64::except::illegal_instruction:
+      // set mtval to the instruction that caused the exception
+      set_csr(csr::mtval, inst);
+      break;
+    
+    case rv64::except::load_address_misaligned:
+    case rv64::except::store_address_misaligned:
+      // set mtval to the misaligned destination memory address
+      set_csr(csr::mtval, EXTRACT_RS1_FROM_INST(inst));
+      break;
+
+    case rv64::except::ecall_from_u:
+      set_prv(3);
+      // no break, must do mtval set for both u and m
+    case rv64::except::ecall_from_m:
+      // set mtval to the instruction that caused the exception
+      set_csr(csr::mtval, 0);
+      break;
+
+    default:
+      vlog("Unimplemented exception");
+      break;
+  }
+
+  // adjustments
+  pc = pc - 4;
+  instruction_count --;  
+}
+
+void processor::interrupt(uint64_t cause) {
+  vlog("Interrupt: " << cause << ", at: " << std::hex << pc);
+
+  // mpie = 1
+  csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+
+  // store pc in mepc
+  set_csr(csr::mepc, pc);
+
+  // set mcause to the cause of the interrupt
+  set_csr(csr::mcause, 0x8000000000000000 + cause);
+
+  // set mtvec to the address of the interrupt handler
+  if (csr[csr::mtvec] & 0x1) {
+    // direct mode
+    pc = csr[csr::mtvec] & 0xfffffffffffffffc;
+  } else {
+    // vectored mode
+    pc = (csr[csr::mtvec] & 0xfffffffffffffffc) + ( cause << 2);
+  }
+
+  if (prv == 3) { // if machine mode
+    // mpp = 0b11
+    csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
+  } 
+  else if (prv == 0) { // if user mode
+
+    // switch to machine mode
+    set_prv(3);
+
+
+    if ((csr[csr::mstatus] & 0x8) == false) {
+      // mpie = 0b0
+      csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
+    }
+    
+  }
+
+  // mie = 0b0
+  csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+
+  switch(cause) {
+    case rv64::interrupt::user_software:
+      vlog("User software interrupt");
+      break;
+    
+    case rv64::interrupt::machine_software:
+      vlog("Machine software interrupt");
+      break;
+
+    case rv64::interrupt::user_timer:
+      vlog("User timer interrupt")
+      break;
+    
+    case rv64::interrupt::machine_timer:
+      vlog("Machine timer interrupt");
+      break;
+    
+    case rv64::interrupt::user_external:
+      vlog("User external interrupt")
+      break;
+
+    case rv64::interrupt::machine_external:
+      vlog("Machine external interrupt");
+      break;
+
+    default:
+      vlog("Unimplemented interrupt");
+      break;
+  }
+
 }

@@ -4,14 +4,19 @@
 // start = LSB of result, end = MSB of result. Start must always be less than end.
 #define BITMASK(high, low) (((1ULL << ((high) - (low) + 1)) - 1) << (low))
 
-/*
-* Extracts bits from a value by specifying the high and low bits
-*/
+/**
+ * Extracts bits from a value by specifying the high and low bits
+ */
 #define EXTRACT_BITS(value, high, low) (((value) & BITMASK((high), (low))) >> (low))
 
 /**
-* Extracts bits from a value by masking the original and THEN shifting the result.
-*/
+ * Extact a singular bit from a value
+ */
+#define EXTRACT_BIT(value, bit_num_little_endian) ((value >> bit_num_little_endian) & 0x1)
+
+/**
+ * Extracts bits from a value by masking the original and THEN shifting the result.
+ */
 #define USE_BITMASK(value, mask, shift) (((value) & (mask)) >> (shift))
 
 // Field extraction from a RV64 RISC-V instructions
