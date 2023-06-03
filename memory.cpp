@@ -85,7 +85,8 @@ memory::memory(bool verbose) : mem_m() {
 // Read a doubleword of data from a doubleword-aligned address.
 // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
 uint64_t memory::read_doubleword (uint64_t address) {
-  address = address - (address % 8);
+  // align address to doubleword
+  address -= (address % 8);
 
   uint64_t index;
   uintptr_t block;
@@ -96,7 +97,6 @@ uint64_t memory::read_doubleword (uint64_t address) {
 }
 
 uint32_t memory::read_word (uint64_t address) {
-  address = address - (address % 4);
 
   uint64_t index;
   uintptr_t block;
@@ -111,7 +111,8 @@ uint32_t memory::read_word (uint64_t address) {
 // If the address is not a multiple of 8, it is rounded down to a multiple of 8.
 // The mask contains 1s for bytes to be updated and 0s for bytes that are to be unchanged.
 void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
-  address -= address % 8;
+  // align address to doubleword
+  address -= (address % 8);
 
   uint64_t index;
   uintptr_t block;
@@ -122,8 +123,7 @@ void memory::write_doubleword (uint64_t address, uint64_t data, uint64_t mask) {
   vlog("Memory doublewrite word: address = " << setfill('0') << setw(16) << std::hex << address << ", data = " << data << ", mask = " << mask);
 }
 
-void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
-  address -= address % 4;
+void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) { 
 
   uint64_t index;
   uintptr_t block;
@@ -135,7 +135,6 @@ void memory::write_word (uint64_t address, uint64_t data, uint64_t mask) {
 }
 
 void memory::write_half(uint64_t address, uint64_t data, uint64_t mask) {
-  address -= address % 2;
 
   uint64_t index;
   uintptr_t block;

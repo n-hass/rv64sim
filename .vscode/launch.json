@@ -1,0 +1,102 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "inputs": [
+        {
+            "id": "makeTarget",
+            "type": "promptString",
+            "description": "The Makefile target"
+        },
+        {
+            "id": "binaryName",
+            "type": "promptString",
+            "description": "Enter binary name in current directory"
+        }
+    ],
+    "configurations": [
+        
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+
+        {
+            "name": "clang++ - Build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "C/C++: clang++ build active file",
+            "postDebugTask": "clean general debug files"
+        },
+        // {
+        //     "name": "Build from Makefile and debug",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${fileDirname}/${input:binaryName}",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [],
+        //     "externalConsole": true,
+        //     "MIMode": "lldb",
+        //     "preLaunchTask": "Build makefile",
+        //     "postDebugTask": "Clean makefile"
+        // },
+        {
+            "name": "Run C++ binary",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${fileDirname}/${input:binaryName}",
+            "args": [],
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated",
+            "expressions": "simple"
+        },
+        {
+            "name": "Launch sim from current dir",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/rv64sim",
+            "args": ["-s2"],
+            "stopOnEntry": false,
+            "cwd": "${fileDirname}",
+            "terminal": "integrated",
+            "expressions": "simple"
+        },
+        {
+            "name": "Use current hex file",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/rv64sim",
+            "args": ["-s2","--testHex", "${fileBasename}"],
+            "stopOnEntry": false,
+            "cwd": "${fileDirname}",
+            "terminal": "integrated",
+            "expressions": "simple"
+        },
+        {
+            "name": "Use current stdin file pipe",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/rv64sim",
+            "args": ["-s2"],
+            "stopOnEntry": false,
+            "cwd": "${fileDirname}",
+            "terminal": "integrated",
+            "expressions": "simple",
+            
+        },
+    ]
+}

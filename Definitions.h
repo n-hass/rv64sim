@@ -58,10 +58,23 @@ namespace rv64 {
     fence_f = 0x00,
     fence_i_f = 0x01
   };
-  enum sys_rs2 {
-    ecall_f = 0x00,
-    ebreak_f = 0x01
+
+  enum sys_funct3 {
+    priv_f = 0x00,
+    csrrw_f = 0x01,
+    csrrs_f = 0x02,
+    csrrc_f = 0x03,
+    csrrwi_f = 0x05,
+    csrrsi_f = 0x06,
+    csrrci_f = 0x07
   };
+
+  enum priv_rs2 {
+    ecall_rs2 = 0x00,
+    ebreak_rs2 = 0x01,
+    mret_rs2 = 0x02,
+  };
+
   enum load_funct3 {
     lb_f = 0x00,
     lh_f = 0x01,
@@ -101,14 +114,6 @@ namespace rv64 {
     sllw_f = 0x01,
     srlw_f = 0x05,
     sraw_f = 0x105
-  };
-  enum zicsr_funct12 {
-    csrrw_f = 0x01,
-    csrrs_f = 0x02,
-    csrrc_f = 0x03,
-    csrrwi_f = 0x05,
-    csrrsi_f = 0x06,
-    csrrci_f = 0x07
   };
 
   enum except {

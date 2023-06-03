@@ -29,6 +29,28 @@ using rv64::csr;
   }
 //
 
+inline bool valid_csr(unsigned int csr_num) {
+  switch (csr_num) {
+    case csr::mvendorid:
+    case csr::marchid:
+    case csr::mimpid:
+    case csr::mhartid:
+    case csr::mstatus:
+    case csr::misa:
+    case csr::mie:
+    case csr::mtvec:
+    case csr::mscratch:
+    case csr::mepc:
+    case csr::mcause:
+    case csr::mtval:
+    case csr::mip:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
 // Consructor
 processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->verbose = verbose;
@@ -86,29 +108,31 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
     if (pc % 4 != 0) {
       // cout << "Error: misaligned pc" << endl;
       exception(0, 0);
-    } else {
-      // check for interrupts in order of priority
-      if ( (csr[csr::mstatus] & 0x8) || prv == 0) {
-        if (EXTRACT_BIT(csr[csr::mie], 11) & EXTRACT_BIT(csr[csr::mip], 11)) {
-          interrupt(rv64::interrupt::machine_external);
-        } 
-        else if (EXTRACT_BIT(csr[csr::mie], 3) & EXTRACT_BIT(csr[csr::mip], 3)) {
-          interrupt(rv64::interrupt::machine_software);
-        } 
-        else if (EXTRACT_BIT(csr[csr::mie], 7) & EXTRACT_BIT(csr[csr::mip], 7)) {
-          interrupt(rv64::interrupt::machine_timer);
-        }
-        else if (EXTRACT_BIT(csr[csr::mie], 8) & EXTRACT_BIT(csr[csr::mip], 8)) {
-          interrupt(rv64::interrupt::user_external);
-        }
-        else if ((csr[csr::mie] & 0x1) & (csr[csr::mip] & 0x1) ) {
-          interrupt(rv64::interrupt::user_software);
-        }
-        else if (EXTRACT_BIT(csr[csr::mie], 4) & EXTRACT_BIT(csr[csr::mip], 4)) {
-          interrupt(rv64::interrupt::user_timer);
-        }
+      num--;
+      continue;
+    }
+    // check for interrupts in order of priority
+    if ( (csr[csr::mstatus] & 0x8) || prv == 0) {
+      if (EXTRACT_BIT(csr[csr::mie], 11) & EXTRACT_BIT(csr[csr::mip], 11)) {
+        interrupt(rv64::interrupt::machine_external);
+      } 
+      else if (EXTRACT_BIT(csr[csr::mie], 3) & EXTRACT_BIT(csr[csr::mip], 3)) {
+        interrupt(rv64::interrupt::machine_software);
+      } 
+      else if (EXTRACT_BIT(csr[csr::mie], 7) & EXTRACT_BIT(csr[csr::mip], 7)) {
+        interrupt(rv64::interrupt::machine_timer);
+      }
+      else if (EXTRACT_BIT(csr[csr::mie], 8) & EXTRACT_BIT(csr[csr::mip], 8)) {
+        interrupt(rv64::interrupt::user_external);
+      }
+      else if ((csr[csr::mie] & 0x1) & (csr[csr::mip] & 0x1) ) {
+        interrupt(rv64::interrupt::user_software);
+      }
+      else if (EXTRACT_BIT(csr[csr::mie], 4) & EXTRACT_BIT(csr[csr::mip], 4)) {
+        interrupt(rv64::interrupt::user_timer);
       }
     }
+    
 
     pc_changed = false;
     step();
@@ -296,28 +320,203 @@ void processor::step() {
       // do nothing in stage 1
       // stage 2:
       funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
-      switch(rv64::fen_funct3(funct3)) {
-        case rv64::fen_funct3::fence_f:
-          // do nothing in stage 1
-          vlog("fence operation decoded but not implemented");
-        break;
-        case rv64::fen_funct3::fence_i_f:
-          // do nothing in stage 1
-          vlog("fence.i operation decoded but not implemented");
-        break;
-      }
+      vlog("no fence ops");
+      // switch(rv64::fen_funct3(funct3)) {
+      //   case rv64::fen_funct3::fence_f:
+      //     // do nothing in stage 1
+      //     vlog("fence operation decoded but not implemented");
+      //   break;
+      //   case rv64::fen_funct3::fence_i_f:
+      //     // do nothing in stage 1
+      //     vlog("fence.i operation decoded but not implemented");
+      //   break;
+      // }
     break;
 
     case rv64::opcode::sys_op:
-      rs2 = EXTRACT_RS2_FROM_INST(inst);
-      switch (rv64::sys_rs2(rs2)) { // these system instructions are weird. they use rs2 to differentiate between them
-        case rv64::sys_rs2::ecall_f:
-          cout << "ecall: not implemented\n";
+
+      funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
+      switch (rv64::sys_funct3(funct3)) {
+
+        case rv64::sys_funct3::priv_f:
+          rs2 = EXTRACT_RS2_FROM_INST(inst);
+          switch (rv64::priv_rs2(rs2)) { // these privileged instructions are weird. they use rs2 to differentiate between them
+            
+            case rv64::priv_rs2::ecall_rs2:
+              if (prv == 0) exception(rv64::except::ecall_from_u, inst);
+              else if (prv == 3) exception(rv64::except::ecall_from_m, inst);
+            break;
+
+            case rv64::priv_rs2::ebreak_rs2:
+              set_csr(csr::mepc, pc);
+        
+              if (csr[csr::mtvec] & 0x1) {
+                pc = (csr[csr::mtvec] & ~0x3) + (4 * (csr[csr::mcause] & 0x0));
+              } 
+              else {
+                pc = csr[csr::mtvec] & ~0x3;
+              }
+              pc_changed = true;
+
+              // set mpp
+              if (prv == 3) {
+                // mpp = 3
+                csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
+              }
+              else if (prv == 0) {
+                // mpp = 0
+                csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
+              }
+              
+              // set mpie
+              if (csr[csr::mstatus] & 0x8) {
+                // mpie = 1
+                csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+              }
+              else {
+                // mpie = 0
+                csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+              }
+
+              // mie = 0
+              csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+
+              // mcause = 3
+              set_csr(csr::mcause, 3);
+
+              // set machine privelage level
+              prv = 3;
+
+              // offsets
+              instruction_count--;
+
+            break;
+
+            case rv64::priv_rs2::mret_rs2:
+              if (prv == 0) {
+                exception(rv64::except::illegal_instruction, inst);
+                break;
+              }
+
+              pc = csr[csr::mepc];
+              pc_changed = true;
+
+              if ( (csr[csr::mstatus] & 0x1800) == 0x1800) {
+                prv = 3;
+              }
+              else {
+                prv = 0;
+              }
+
+              // mpp = 0
+              csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
+
+              // mie
+              if (csr[csr::mstatus] & 0x80) {
+                // mie = 1
+                csr[csr::mstatus] = csr[csr::mstatus] | 0x8;
+              }
+              else {
+                // mie = 0
+                csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+              }
+
+              csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+
+            break;
+          }
         break;
-        case rv64::sys_rs2::ebreak_f:
-          cout << "ebreak: not implemented\n";
+
+#define ENFORCE_PRIV_CHECK if( (prv == 0 || (valid_csr(imm) == false)) || \
+                               (imm == csr::mvendorid && rs1 != 0) || \
+                               (imm == csr::marchid && rs1 != 0) || \
+                               (imm == csr::mimpid && rs1 != 0) || \
+                               (imm == csr::mhartid && rs1 != 0) \
+                             ) \
+                           { \
+                             exception(rv64::except::illegal_instruction, inst); \
+                             break; \
+                           }
+        case rv64::sys_funct3::csrrw_f:
+          imm = (inst >> 20) & 0xfff;
+          rs1 = EXTRACT_RS1_FROM_INST(inst);
+
+          ENFORCE_PRIV_CHECK;
+
+          dwa = reg[rs1];
+          if (imm == csr::mip) dwa = dwa & 0x111;
+
+          set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
+          set_csr(imm, dwa);
+          
+        break;
+        
+        case rv64::sys_funct3::csrrs_f:
+          imm = (inst >> 20) & 0xfff;
+          rs1 = EXTRACT_RS1_FROM_INST(inst);
+
+          ENFORCE_PRIV_CHECK;
+
+          dwa = csr[imm] | reg[rs1];
+          if (imm == csr::mip) dwa = dwa & 0x111;
+
+          set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
+          if(rs1 != 0) set_csr(imm, dwa);
+        break;
+        
+        case rv64::sys_funct3::csrrc_f:
+          imm = (inst >> 20) & 0xfff;
+          rs1 = EXTRACT_RS1_FROM_INST(inst);
+
+          ENFORCE_PRIV_CHECK;
+
+          dwa = csr[imm] & (~reg[rs1]);
+          if (imm == csr::mip) dwa = dwa & 0x111;
+
+          set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
+          if(rs1 != 0) set_csr(imm, dwa);
+        break;
+        
+        case rv64::sys_funct3::csrrwi_f:
+          imm = (inst >> 20) & 0xfff;
+          rs1 = EXTRACT_RS1_FROM_INST(inst);
+
+          ENFORCE_PRIV_CHECK;
+
+          dwa = rs1;
+          if (imm == csr::mip) dwa = dwa & 0x111;
+
+          set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
+          set_csr(imm, dwa);
+        break;
+        
+        case rv64::sys_funct3::csrrsi_f:
+          imm = (inst >> 20) & 0xfff;
+          rs1 = EXTRACT_RS1_FROM_INST(inst);
+
+          ENFORCE_PRIV_CHECK;
+
+          dwa = csr[imm] | rs1;
+          if (imm == csr::mip) dwa = dwa & 0x111;
+
+          set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
+          if (rs1 != 0) set_csr(imm, dwa);
+        break;
+        
+        case rv64::sys_funct3::csrrci_f:
+          imm = (inst >> 20) & 0xfff;
+          rs1 = EXTRACT_RS1_FROM_INST(inst);
+
+          ENFORCE_PRIV_CHECK;
+
+          dwa = csr[imm] & (~rs1);
+          if (imm == csr::mip) dwa = dwa & 0x111;
+
+          set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
+          if (rs1 != 0) set_csr(imm, dwa);
         break;
       }
+
     break;
 
     case rv64::opcode::load_op:
@@ -340,30 +539,41 @@ void processor::step() {
         break;
 
         case rv64::load_funct3::lh_f:
-          offset = address % 8;
+          if (address % 2 == 0) {
+            offset = address % 8;
 
-          dwa = mem->read_doubleword(address);
-          set_reg_m(rd, int64_t((uint64_t((dwa >> (offset*8))) & 0xFFFF) << 48) >> 48);
-          vlog("lh x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+            dwa = mem->read_doubleword(address);
+            set_reg_m(rd, (int64_t)(int16_t)((dwa >> (offset*8)) & 0xFFFF));
+            vlog("lh x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          } else {
+            exception(rv64::except::load_address_misaligned, inst);
+          }
         break;
 
         case rv64::load_funct3::lw_f:
-          dwa = int32_t(mem->read_word(address));
-          set_reg_m(rd, int64_t(int32_t(dwa)));
-          vlog("lw x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          if (address % 4 == 0) {
+            dwa = int32_t(mem->read_word(address));
+            set_reg_m(rd, int64_t(int32_t(dwa)));
+            vlog("lw x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          }
+          else {
+            exception(rv64::except::load_address_misaligned, inst);
+          }
         break;
 
         case rv64::load_funct3::ld_f:
           vlog("LD at " << pc);
-          if (address % 4 != 0) {
-            cout << "Error: misaligned address for ld" << endl;
+          if (address % 8 == 0) {
+            dwa = mem->read_doubleword(address);
+            set_reg_m(rd, dwa);
+            vlog("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          } else {
+            exception(rv64::except::load_address_misaligned, inst);
           }
-          dwa = mem->read_doubleword(address);
-          set_reg_m(rd, dwa);
-          vlog("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lbu_f:
+
           offset = address % 8;
           dwa = mem->read_doubleword(address);
           if (offset == 0) {
@@ -376,20 +586,29 @@ void processor::step() {
         break;
 
         case rv64::load_funct3::lhu_f:
-          offset = address % 8;
-          dwa = mem->read_doubleword(address);
-          if (offset == 0) {
-            set_reg_m(rd, (uint64_t)(dwa & 0xFFFF));
+          if (address % 2 == 0) {
+            offset = address % 8;
+            dwa = mem->read_doubleword(address);
+            if (offset == 0) {
+              set_reg_m(rd, (uint64_t)(dwa & 0xFFFF));
+            } else {
+              set_reg_m(rd, (uint64_t)((dwa >> (offset*8)) & 0xFFFF));
+            }
+            vlog("lhu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           } else {
-            set_reg_m(rd, (uint64_t)((dwa >> (offset*8)) & 0xFFFF));
+            exception(rv64::except::load_address_misaligned, inst);
           }
-          vlog("lhu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
         break;
 
         case rv64::load_funct3::lwu_f:
-          dwa = uint32_t(mem->read_word(address));
-          set_reg_m(rd, dwa);
-          vlog("lwu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          if (address % 4 == 0) {
+            dwa = uint32_t(mem->read_word(address));
+            set_reg_m(rd, dwa);
+            vlog("lwu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          }
+          else {
+            exception(rv64::except::load_address_misaligned, inst);
+          }
         break;
       }
 
@@ -411,18 +630,33 @@ void processor::step() {
         break;
 
         case (rv64::store_funct3::sh_f):
-          mem->write_half(address, reg[rs2], 0xFFFF);
-          vlog("sh x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          if (address % 2 == 0) {
+            mem->write_half(address, reg[rs2], 0xFFFF);
+            vlog("sh x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          }
+          else {
+            exception(rv64::except::store_address_misaligned, inst);
+          }
         break;
 
         case (rv64::store_funct3::sw_f):
-          mem->write_word(address, reg[rs2], ~0UL);
-          vlog("sw x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          if (address % 4 == 0) {
+            mem->write_word(address, reg[rs2], ~0UL);
+            vlog("sw x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          }
+          else {
+            exception(rv64::except::store_address_misaligned, inst);
+          }
         break;
 
         case (rv64::store_funct3::sd_f):
-          mem->write_doubleword(address, reg[rs2], ~0ULL);
-          vlog("sd x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          if (address % 8 == 0) {
+            mem->write_doubleword(address, reg[rs2], ~0ULL);
+            vlog("sd x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
+          }
+          else {
+            exception(rv64::except::store_address_misaligned, inst);
+          }
         break;
       }
 
@@ -589,8 +823,7 @@ void processor::step() {
     break;
 
     default:
-      vlog("Unknown instruction at " << pc);
-      std::cout << "Illegal instruction at " << pc << std::endl;
+      vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
     break;
 
   }
@@ -607,23 +840,29 @@ void processor::set_breakpoint(uint64_t addr) {
 }
 
 void processor::show_prv() {
-  // switch (prv) {
-  //   case 0:
-  //     std::cout << "Machine mode" << std::endl;
-  //   break;
+  switch (prv) {
+    case 0:
+      std::cout << "0 (user)" << std::endl;
+    break;
 
-  //   case 1:
-  //     std::cout << "Supervisor mode" << std::endl;
-  //   break;
-
-  //   case 3:
-  //     std::cout << "User mode" << std::endl;
-  //   break;
-  // }
+    case 3:
+      std::cout << "3 (machine)" << std::endl;
+    break;
+  }
 }
 
 void processor::set_prv(uint8_t prv) {
-  this->prv = prv;
+
+  switch (prv) {
+    case 0:
+    case 3:
+      this->prv = prv;
+      break;
+
+    default:
+      cout << "Invalid privelage level" << endl;
+      break;
+  }
 }
 
 void processor::show_csr(unsigned int csr_num) {
@@ -648,9 +887,6 @@ void processor::show_csr(unsigned int csr_num) {
       cout << "Illegal CSR number" << endl;
       break;
   }
-
-
-  cout << "CSR " << csr_num << " = " << csr[csr_num] << endl;
   
 }
 
@@ -663,7 +899,8 @@ void processor::set_csr(unsigned int csr_num, uint64_t value) {
       value = value | 0x200000000;
       break;
     case csr::misa:
-      value = value & 0x8000000000100100;
+      // ignore input, its a fixed value
+      value = 0x8000000000100100;
       break;
     case csr::mie:
     case csr::mip:
@@ -671,11 +908,11 @@ void processor::set_csr(unsigned int csr_num, uint64_t value) {
       break;
     case csr::mtvec:
       if (value & 0x1) {
-        // direct mode
-        value = value & 0xfffffffffffffffc;
-      } else {
         // vectored mode
         value = value & 0xffffffffffffff01;
+      } else {
+        // direct mode
+        value = value & 0xfffffffffffffffc;
       }
       break;
     case csr::mepc:
@@ -717,18 +954,19 @@ void processor::exception(uint64_t cause, uint32_t inst) {
   uint64_t pc_0 = this->pc;
 
   // store the original pc that caused the exception
-  csr[csr::mepc] = pc_0;
+  set_csr(csr::mepc, pc);
 
   set_csr(csr::mcause, cause);
 
   // set pc to the address of the exception handler
   if (csr[csr::mtvec] & 0x1) {
-    // direct mode
-    pc = csr[csr::mtvec] & ~0x1;
-  } else {
     // vectored mode
     pc = (csr[csr::mtvec] & ~0x1) + ( (cause & 0x1) << 2);
+  } else {
+    // direct mode
+    pc = csr[csr::mtvec] & ~0x1;
   }
+  pc_changed = true;
 
   // set mstatus based on privelage level
   if (prv == 3) {
@@ -761,7 +999,6 @@ void processor::exception(uint64_t cause, uint32_t inst) {
   switch (cause) {
     case rv64::except::pc_misaligned:
       instruction_count++;
-      this->pc += 4;
       // set mtval to the original misaligned pc
       set_csr(csr::mtval, pc_0);
       break;
@@ -774,7 +1011,7 @@ void processor::exception(uint64_t cause, uint32_t inst) {
     case rv64::except::load_address_misaligned:
     case rv64::except::store_address_misaligned:
       // set mtval to the misaligned destination memory address
-      set_csr(csr::mtval, EXTRACT_RS1_FROM_INST(inst));
+      set_csr(csr::mtval, reg[EXTRACT_RS1_FROM_INST(inst)]);
       break;
 
     case rv64::except::ecall_from_u:
@@ -791,8 +1028,7 @@ void processor::exception(uint64_t cause, uint32_t inst) {
   }
 
   // adjustments
-  pc = pc - 4;
-  instruction_count --;  
+  instruction_count = instruction_count-1;  
 }
 
 void processor::interrupt(uint64_t cause) {
@@ -809,12 +1045,13 @@ void processor::interrupt(uint64_t cause) {
 
   // set mtvec to the address of the interrupt handler
   if (csr[csr::mtvec] & 0x1) {
-    // direct mode
-    pc = csr[csr::mtvec] & 0xfffffffffffffffc;
-  } else {
     // vectored mode
     pc = (csr[csr::mtvec] & 0xfffffffffffffffc) + ( cause << 2);
+  } else {
+    // direct mode
+    pc = csr[csr::mtvec] & 0xfffffffffffffffc;
   }
+  pc_changed = true;
 
   if (prv == 3) { // if machine mode
     // mpp = 0b11

@@ -27,7 +27,7 @@ class processor {
   memory* mem;
 
   uint64_t pc;
-  int64_t reg[32];
+  uint64_t reg[32];
   uint64_t breakpoint;
   uint64_t instruction_count;
   uint64_t cycle_count;
@@ -37,8 +37,8 @@ class processor {
 
   // functionally for stage 2:
   uint8_t prv; // privilege level
-  uint64_t csr[836]; // the CSR registers, only need 836 to hash the csr's which we implement
-  // unordered_map<uint16_t, uint64_t> csr; // map csr's to their index
+  // uint64_t csr[4096]; // the CSR registers
+  unordered_map<uint16_t, uint64_t> csr; // map csr's to their index
   
 
   // Exception handling
@@ -56,7 +56,7 @@ class processor {
 
   // Set PC to new value
   inline void set_pc(uint64_t new_pc) {
-    pc = new_pc - (new_pc % 2);
+    pc = new_pc;
   }
 
   // increment the PC after an instruction. Will do nothing if the last instruction was a jump/branch

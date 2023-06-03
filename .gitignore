@@ -91,3 +91,6 @@ Temporary Items
 
 rv64sim
 .depend
+
+# test logs
+tests/*/*.log
