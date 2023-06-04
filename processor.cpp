@@ -163,6 +163,7 @@ void processor::step() {
   uint8_t rd;
   uint8_t rs1;
   uint8_t rs2;
+  uint8_t bA;
   int64_t imm;
 
   uint64_t address;
@@ -409,13 +410,13 @@ void processor::step() {
 
             break;
 
-            case rv64::priv_rs2::mret_rs2: // TODO: swap to the other version
+            case rv64::priv_rs2::mret_rs2:
               if (prv == 0) {
                 exception(rv64::except::illegal_instruction, inst);
                 break;
               }
 
-              pc = csr[csr::mepc];
+              pc = csr[csr::mepc]; // TODO: use update_pc()
               pc_changed = true;
 
               if ( (csr[csr::mstatus] & 0x1800) == 0x1800) {
@@ -425,20 +426,25 @@ void processor::step() {
                 prv = 0;
               }
 
-              // mpp = 0
-              csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
+              // use the byteA buffer to store mpie
+              bA = (csr[csr::mstatus] >> 7) % 2;
+              set_csr(csr::mstatus, csr[csr::mstatus] & 0xFFFFFFFFFFFFE777);
+              set_csr(csr::mstatus, csr[csr::mstatus] | (0x200000080 | uint32_t(bA) << 3));
 
-              // mie
-              if (csr[csr::mstatus] & 0x80) {
-                // mie = 1
-                csr[csr::mstatus] = csr[csr::mstatus] | 0x8;
-              }
-              else {
-                // mie = 0
-                csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
-              }
+              // // mpp = 0
+              // csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
 
-              csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+              // // mie
+              // if (csr[csr::mstatus] & 0x80) {
+              //   // mie = 1
+              //   csr[csr::mstatus] = csr[csr::mstatus] | 0x8;
+              // }
+              // else {
+              //   // mie = 0
+              //   csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+              // }
+
+              // csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
               // // //
               // if (prv == 0) {
               //   exception(rv64::except::illegal_instruction, inst);
@@ -584,7 +590,7 @@ void processor::step() {
             set_reg_m(rd, (int64_t)(int16_t)((dwa >> (offset*8)) & 0xFFFF));
             vlog("lh x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           } else {
-            exception(rv64::except::load_address_misaligned, inst);
+            exception(rv64::except::load_address_misaligned, address);
           }
         break;
 
@@ -595,7 +601,7 @@ void processor::step() {
             vlog("lw x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           }
           else {
-            exception(rv64::except::load_address_misaligned, inst);
+            exception(rv64::except::load_address_misaligned, address);
           }
         break;
 
@@ -606,7 +612,7 @@ void processor::step() {
             set_reg_m(rd, dwa);
             vlog("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           } else {
-            exception(rv64::except::load_address_misaligned, inst);
+            exception(rv64::except::load_address_misaligned, address);
           }
         break;
 
@@ -634,7 +640,7 @@ void processor::step() {
             }
             vlog("lhu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           } else {
-            exception(rv64::except::load_address_misaligned, inst);
+            exception(rv64::except::load_address_misaligned, address);
           }
         break;
 
@@ -645,7 +651,7 @@ void processor::step() {
             vlog("lwu x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           }
           else {
-            exception(rv64::except::load_address_misaligned, inst);
+            exception(rv64::except::load_address_misaligned, address);
           }
         break;
 
@@ -678,7 +684,7 @@ void processor::step() {
             vlog("sh x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           }
           else {
-            exception(rv64::except::store_address_misaligned, inst);
+            exception(rv64::except::store_address_misaligned, address);
           }
         break;
 
@@ -688,7 +694,7 @@ void processor::step() {
             vlog("sw x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           }
           else {
-            exception(rv64::except::store_address_misaligned, inst);
+            exception(rv64::except::store_address_misaligned, address);
           }
         break;
 
@@ -698,7 +704,7 @@ void processor::step() {
             vlog("sd x" << (unsigned int)rs2 << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           }
           else {
-            exception(rv64::except::store_address_misaligned, inst);
+            exception(rv64::except::store_address_misaligned, address);
           }
         break;
 
@@ -947,7 +953,7 @@ void processor::show_csr(unsigned int csr_num) {
 
 void processor::set_csr(unsigned int csr_num, uint64_t value) {
 
-  // apply the writable rules to the input value
+  // apply the writable bit rules to the input value
   switch (csr_num) {
     case csr::mstatus:
       value = value & 0x1888;
@@ -1010,39 +1016,40 @@ void processor::exception(uint64_t cause, uint32_t inst) {
 
   // store the original pc that caused the exception
   set_csr(csr::mepc, pc);
-
   set_csr(csr::mcause, cause);
-
-
   update_pc(csr[csr::mtvec] & 0xfffffffffffffffc);
+  
+  // // set mstatus based on privelage level
+  // if (prv == 3) {
 
-  // set mstatus based on privelage level
-  if (prv == 3) {
+  //   // mpp = 0b11
+  //   csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
 
-    // mpp = 0b11
-    csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
+  //   // mpie = 0b0
+  //   csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
 
-    // mpie = 0b0
-    csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
+  // } 
+  // else if (prv == 0) {
 
-  } 
-  else if (prv == 0) {
+  //   // mpp = 0b0
+  //   csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
 
-    // mpp = 0b0
-    csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
+  //   // set mpie
+  //   if (csr[csr::mstatus] & 0x8) {
+  //     // mpie = 1
+  //     csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+  //   } else {
+  //     // mpie = 0
+  //     csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
+  //   }
 
-    // set mpie
-    if (csr[csr::mstatus] & 0x8) {
-      // mpie = 1
-      csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
-    } else {
-      // mpie = 0
-      csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
-    }
+  //   // mie = 0b0
+  //   csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+  // }
 
-    // mie = 0b0
-    csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
-  }
+  uint8_t mie = (csr[csr::mstatus] >> 3) % 2;
+  csr[csr::mstatus] = csr[csr::mstatus] & 0xFFFFFFFFFFFFE777;
+  csr[csr::mstatus] = csr[csr::mstatus] | (uint64_t(prv) << 11 | uint64_t(mie) << 7);
 
   switch (cause) {
     case rv64::except::pc_misaligned:
@@ -1059,20 +1066,21 @@ void processor::exception(uint64_t cause, uint32_t inst) {
     case rv64::except::load_address_misaligned:
     case rv64::except::store_address_misaligned:
       // set mtval to the misaligned destination memory address
-      set_csr(csr::mtval, reg[EXTRACT_RS1_FROM_INST(inst)]);
+      // load/store passes the address to this exception function in place of the instruction parameter
+      set_csr(csr::mtval, inst);
       break;
 
     case rv64::except::ecall_from_u:
       set_prv(3);
-      // no break, must do mtval set for both u and m
+    // no break, must also do below mtval clear as well
     case rv64::except::ecall_from_m:
 
       set_csr(csr::mtval, 0);
-      break;
+    break;
 
     default:
       vlog("Unimplemented exception");
-      break;
+    break;
   }
 
   // adjustments

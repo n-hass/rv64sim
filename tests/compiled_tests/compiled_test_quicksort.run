@@ -1,5 +1,0 @@
-l "compiled_test_quicksort.hex"
-b 0
-.
-. 99999999
-x10
