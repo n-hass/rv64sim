@@ -1,9 +1,14 @@
 CC=gcc
 CXX=g++
 RM=rm -rf
-CPPFLAGS=-g -std=c++11 -Wall -pedantic -flto
-LDFLAGS=-g -flto
+CPPFLAGS=-g -std=c++11 -Wall -pedantic
+LDFLAGS=-g
 LDLIBS=
+
+ifndef NOOPT
+CPPFLAGS+= -O3 -flto
+LDFLAGS+= -O3 -flto
+endif
 
 ifdef LOGGING
 CPPFLAGS+= -DLOGGING_ENABLED
