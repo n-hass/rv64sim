@@ -105,12 +105,6 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
       return;
     }
 
-    if (pc % 4 != 0) {
-      // cout << "Error: misaligned pc" << endl;
-      exception(0, 0);
-      num--;
-      continue;
-    }
     // check for interrupts in order of priority
     if ( (csr[csr::mstatus] & 0x8) || prv == 0) {
       if (EXTRACT_BIT(csr[csr::mie], 11) & EXTRACT_BIT(csr[csr::mip], 11)) {
@@ -133,6 +127,13 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
       }
     }
     
+    // check for pc alignment before fetch
+    if (pc % 4 != 0) {
+      // cout << "Error: misaligned pc" << endl;
+      exception(0, 0);
+      num--;
+      continue;
+    }
 
     pc_changed = false;
     step();
@@ -248,8 +249,18 @@ void processor::step() {
               vlog("SRAI at " << pc);
               set_reg_m(rd, static_cast<int64_t>(reg[rs1]) >> rs2);
             break;
+
+            default:
+              vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+              exception(rv64::except::illegal_instruction, inst);      
+            break;
           }
 
+        break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
         break;
       }
     break;
@@ -312,6 +323,12 @@ void processor::step() {
           vlog("AND at " << pc);
           set_reg_m(rd, reg[rs1] & reg[rs2]);
         break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
+        break;
+
       }
 
     break;
@@ -392,7 +409,7 @@ void processor::step() {
 
             break;
 
-            case rv64::priv_rs2::mret_rs2:
+            case rv64::priv_rs2::mret_rs2: // TODO: swap to the other version
               if (prv == 0) {
                 exception(rv64::except::illegal_instruction, inst);
                 break;
@@ -422,7 +439,23 @@ void processor::step() {
               }
 
               csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+              // // //
+              // if (prv == 0) {
+              //   exception(rv64::except::illegal_instruction, inst);
+              //   break;
+              // }
+              // const uint64_t mstatus = csr[csr::mstatus];
+              // pc = csr[csr::mepc];
+              // prv = (mstatus >> 11) % 4;
+              // const uint8_t mpie = (mstatus >> 7) % 2;
+              // set_csr(csr::mstatus, csr[csr::mstatus] & 0xFFFFFFFFFFFFE777);
+              // set_csr(csr::mstatus, csr[csr::mstatus] | (0x200000080 | uint32_t(mpie) << 3));
 
+            break;
+
+            default:
+              vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+              exception(rv64::except::illegal_instruction, inst);      
             break;
           }
         break;
@@ -514,6 +547,11 @@ void processor::step() {
 
           set_reg_m(EXTRACT_RD_FROM_INST(inst), csr[imm]);
           if (rs1 != 0) set_csr(imm, dwa);
+        break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
         break;
       }
 
@@ -610,6 +648,11 @@ void processor::step() {
             exception(rv64::except::load_address_misaligned, inst);
           }
         break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
+        break;
       }
 
     break;
@@ -657,6 +700,11 @@ void processor::step() {
           else {
             exception(rv64::except::store_address_misaligned, inst);
           }
+        break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
         break;
       }
 
@@ -738,6 +786,11 @@ void processor::step() {
             update_pc( pc + imm );
           }
         break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
+        break;
       }
     break;
 
@@ -780,6 +833,10 @@ void processor::step() {
 
         break;
 
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
+        break;
       }
 
     break;
@@ -811,11 +868,17 @@ void processor::step() {
         case rv64::reg64_funct73::sraw_f:
           set_reg_m(rd, (int64_t(int32_t(int32_t(reg[rs1]) >> (reg[rs2] & 0x1F)))));
         break;
+
+        default:
+          vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+          exception(rv64::except::illegal_instruction, inst);      
+        break;
       }
     break;
 
     default:
       vlog("Unknown instruction at pc = " << setw(16) << setfill('0') << hex << pc << endl);
+      exception(rv64::except::illegal_instruction, inst);      
     break;
 
   }
@@ -950,15 +1013,8 @@ void processor::exception(uint64_t cause, uint32_t inst) {
 
   set_csr(csr::mcause, cause);
 
-  // set pc to the address of the exception handler
-  if (csr[csr::mtvec] & 0x1) {
-    // vectored mode
-    pc = (csr[csr::mtvec] & 0xfffffffffffffffc) + (4 * (cause & 0x0));
-  } else {
-    // direct mode
-    pc = csr[csr::mtvec] & 0xfffffffffffffffc;
-  }
-  pc_changed = true;
+
+  update_pc(csr[csr::mtvec] & 0xfffffffffffffffc);
 
   // set mstatus based on privelage level
   if (prv == 3) {
@@ -1010,7 +1066,7 @@ void processor::exception(uint64_t cause, uint32_t inst) {
       set_prv(3);
       // no break, must do mtval set for both u and m
     case rv64::except::ecall_from_m:
-      // set mtval to the instruction that caused the exception
+
       set_csr(csr::mtval, 0);
       break;
 
@@ -1020,7 +1076,8 @@ void processor::exception(uint64_t cause, uint32_t inst) {
   }
 
   // adjustments
-  instruction_count = instruction_count-1;  
+  instruction_count = instruction_count-1;
+
 }
 
 void processor::interrupt(uint64_t cause) {
