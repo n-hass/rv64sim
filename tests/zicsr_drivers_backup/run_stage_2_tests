@@ -1,0 +1,5 @@
+#! /bin/bash
+
+for i in *.cmd; do
+    ./run_test ${i%.cmd}
+done

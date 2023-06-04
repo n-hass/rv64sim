@@ -1,0 +1,21 @@
+#! /bin/bash
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+if [ -f "$1.cmd" ]; then
+  ../../rv64sim -s2 ${RV64SIM_FLAGS} < ${1}.cmd > ${1}${RV64SIM_FLAGS// /}.log
+
+  OUT=$(diff -iw ${1}${RV64SIM_FLAGS// /}.log expected/${1}${RV64SIM_FLAGS// /}.log)
+  ret=$?
+  if [ "$OUT" != "" ]; then
+    printf "\n${RED}${1}${NC}\n"
+    echo "$OUT"
+  elif [ $ret -eq 0 ]; then
+    printf "\n${GREEN}${1}${NC}\n"
+  else
+    printf "${RED}Missing: ${1}${NC}\n"
+  fi
+else
+  printf "${RED}Unknown test: ${1}${NC}\n"
+fi

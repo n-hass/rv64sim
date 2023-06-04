@@ -667,8 +667,7 @@ void processor::step() {
       imm = EXTRACT_JAL_OFFSET_FROM_INST(inst);
       rd = EXTRACT_RD_FROM_INST(inst);
       set_reg_m(rd, pc + 4);
-      set_pc(pc + imm);
-      pc_changed = true;
+      update_pc(pc + imm);
     break;
 
     case rv64::opcode::jalr_op:
@@ -687,8 +686,7 @@ void processor::step() {
       }
 
       set_reg_m(rd, pc + 4);
-      set_pc(dwa);
-      pc_changed = true;
+      update_pc(dwa);
     break;
 
     case rv64::opcode::branch_op:
@@ -702,48 +700,42 @@ void processor::step() {
         case rv64::branch_funct3::beq_f:
           if (reg[rs1] == reg[rs2]) {
             vlog("taking BEQ at " << pc);
-            set_pc( pc + imm );
-            pc_changed = true;
+            update_pc( pc + imm );
           }
         break;
 
         case rv64::branch_funct3::bne_f:
           if (reg[rs1] != reg[rs2]) {
             vlog("taking BNE at " << pc);
-            set_pc( pc + imm );
-            pc_changed = true;
+            update_pc( pc + imm );
           }
         break;
 
         case rv64::branch_funct3::blt_f:
-          if (reg[rs1] < reg[rs2]) {
+          if ((int64_t)reg[rs1] < (int64_t)reg[rs2]) {
             vlog("taking BLT at " << pc);
-            set_pc( pc + imm );
-            pc_changed = true;
+            update_pc( pc + imm );
           }
         break;
 
         case rv64::branch_funct3::bge_f:
-          if (reg[rs1] >= reg[rs2]) {
+          if ((int64_t)reg[rs1] >= (int64_t)reg[rs2]) {
             vlog("taking BGE at " << pc);
-            set_pc( pc + imm );
-            pc_changed = true;
+            update_pc( pc + imm );
           }
         break;
 
         case rv64::branch_funct3::bltu_f:
           if ((uint64_t)reg[rs1] < (uint64_t)reg[rs2]) {
             vlog("taking BLTU at " << pc);
-            set_pc( pc + imm );
-            pc_changed = true;
+            update_pc( pc + imm );
           }
         break;
 
         case rv64::branch_funct3::bgeu_f:
           if ((uint64_t)reg[rs1] >= (uint64_t)reg[rs2]) {
             vlog("taking BGEU at " << pc);
-            set_pc( pc + imm );
-            pc_changed = true;
+            update_pc( pc + imm );
           }
         break;
       }
@@ -961,10 +953,10 @@ void processor::exception(uint64_t cause, uint32_t inst) {
   // set pc to the address of the exception handler
   if (csr[csr::mtvec] & 0x1) {
     // vectored mode
-    pc = (csr[csr::mtvec] & ~0x1) + ( (cause & 0x1) << 2);
+    pc = (csr[csr::mtvec] & 0xfffffffffffffffc) + (4 * (cause & 0x0));
   } else {
     // direct mode
-    pc = csr[csr::mtvec] & ~0x1;
+    pc = csr[csr::mtvec] & 0xfffffffffffffffc;
   }
   pc_changed = true;
 
@@ -1046,7 +1038,7 @@ void processor::interrupt(uint64_t cause) {
   // set mtvec to the address of the interrupt handler
   if (csr[csr::mtvec] & 0x1) {
     // vectored mode
-    pc = (csr[csr::mtvec] & 0xfffffffffffffffc) + ( cause << 2);
+    pc = (csr[csr::mtvec] & 0xfffffffffffffffc) + (4 * cause);
   } else {
     // direct mode
     pc = csr[csr::mtvec] & 0xfffffffffffffffc;

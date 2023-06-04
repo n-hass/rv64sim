@@ -54,9 +54,15 @@ class processor {
   // Display PC value
   void show_pc();
 
-  // Set PC to new value
+  // Set PC to new value with no alignment check. Used for starting execution only
   inline void set_pc(uint64_t new_pc) {
     pc = new_pc;
+  }
+
+  // Set PC to new value whilst program is running, with forced alignment. The given test cases assume set_pc() doesn't align anything
+  inline void update_pc(uint64_t new_pc) {
+    pc = new_pc - (new_pc % 2);
+    pc_changed = true;
   }
 
   // increment the PC after an instruction. Will do nothing if the last instruction was a jump/branch
