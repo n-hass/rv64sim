@@ -13,7 +13,6 @@
 #include <bitset>
 #include <string>
 
-
 #include "memory.h"
 #include "processor.h"
 #include "Definitions.h"
@@ -55,6 +54,7 @@ inline bool valid_csr(unsigned int csr_num) {
 processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->verbose = verbose;
   this->stage2 = stage2;
+
   this->mem = main_memory;
   
   // initial states
@@ -80,7 +80,6 @@ processor::processor (memory* main_memory, bool verbose, bool stage2) {
   this->csr[0x343] = 0x00;               // mtval
   this->csr[0x344] = 0x00;               // mip
 
-
 }
 
 // Display PC value
@@ -103,6 +102,14 @@ void processor::execute(unsigned int num, bool breakpoint_check) {
       show_pc();
       clear_breakpoint();
       return;
+    }
+    
+    if (stage2 == false) {
+      if (pc % 4 != 0) {
+        cout << "Error: misaligned pc" << endl;
+        num--;
+        continue;
+      }
     }
 
     // check for interrupts in order of priority
@@ -339,16 +346,6 @@ void processor::step() {
       // stage 2:
       funct3 = EXTRACT_FUNCT3_FROM_INST(inst);
       vlog("no fence ops");
-      // switch(rv64::fen_funct3(funct3)) {
-      //   case rv64::fen_funct3::fence_f:
-      //     // do nothing in stage 1
-      //     vlog("fence operation decoded but not implemented");
-      //   break;
-      //   case rv64::fen_funct3::fence_i_f:
-      //     // do nothing in stage 1
-      //     vlog("fence.i operation decoded but not implemented");
-      //   break;
-      // }
     break;
 
     case rv64::opcode::sys_op:
@@ -361,52 +358,60 @@ void processor::step() {
           switch (rv64::priv_rs2(rs2)) { // these privileged instructions are weird. they use rs2 to differentiate between them
             
             case rv64::priv_rs2::ecall_rs2:
-              if (prv == 0) exception(rv64::except::ecall_from_u, inst);
-              else if (prv == 3) exception(rv64::except::ecall_from_m, inst);
+              if (stage2){
+                if (prv == 0) exception(rv64::except::ecall_from_u, inst);
+                else if (prv == 3) exception(rv64::except::ecall_from_m, inst);
+              }
+              else {
+                std::cout << "ecall: not implemented" << std::endl;
+              }
             break;
 
             case rv64::priv_rs2::ebreak_rs2:
-              set_csr(csr::mepc, pc);
-        
-              if (csr[csr::mtvec] & 0x1) {
-                pc = (csr[csr::mtvec] & ~0x3) + (4 * (csr[csr::mcause] & 0x0));
-              } 
-              else {
-                pc = csr[csr::mtvec] & ~0x3;
-              }
-              pc_changed = true;
+              if (stage2) {
+                set_csr(csr::mepc, pc);
+          
+                if (csr[csr::mtvec] & 0x1) {
+                  pc = (csr[csr::mtvec] & ~0x3) + (4 * (csr[csr::mcause] & 0x0));
+                } 
+                else {
+                  pc = csr[csr::mtvec] & ~0x3;
+                }
+                pc_changed = true;
 
-              // set mpp
-              if (prv == 3) {
-                // mpp = 3
-                csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
-              }
-              else if (prv == 0) {
-                // mpp = 0
-                csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
-              }
-              
-              // set mpie
-              if (csr[csr::mstatus] & 0x8) {
-                // mpie = 1
-                csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
-              }
-              else {
-                // mpie = 0
+                // set mpp
+                if (prv == 3) {
+                  // mpp = 3
+                  csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
+                }
+                else if (prv == 0) {
+                  // mpp = 0
+                  csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
+                }
+                
+                // set mpie
+                if (csr[csr::mstatus] & 0x8) {
+                  // mpie = 1
+                  csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
+                }
+                else {
+                  // mpie = 0
+                  csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+                }
+
+                // mie = 0
                 csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
+                // mcause = 3
+                set_csr(csr::mcause, 3);
+
+                // set machine privelage level
+                prv = 3;
+                // offsets
+                instruction_count--;
               }
-
-              // mie = 0
-              csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
-
-              // mcause = 3
-              set_csr(csr::mcause, 3);
-
-              // set machine privelage level
-              prv = 3;
-
-              // offsets
-              instruction_count--;
+              else {
+                std::cout << "ebreak: not implemented" << std::endl;
+              }
 
             break;
 
@@ -416,8 +421,7 @@ void processor::step() {
                 break;
               }
 
-              pc = csr[csr::mepc]; // TODO: use update_pc()
-              pc_changed = true;
+              update_pc(csr[csr::mepc]);
 
               if ( (csr[csr::mstatus] & 0x1800) == 0x1800) {
                 prv = 3;
@@ -430,32 +434,6 @@ void processor::step() {
               bA = (csr[csr::mstatus] >> 7) % 2;
               set_csr(csr::mstatus, csr[csr::mstatus] & 0xFFFFFFFFFFFFE777);
               set_csr(csr::mstatus, csr[csr::mstatus] | (0x200000080 | uint32_t(bA) << 3));
-
-              // // mpp = 0
-              // csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
-
-              // // mie
-              // if (csr[csr::mstatus] & 0x80) {
-              //   // mie = 1
-              //   csr[csr::mstatus] = csr[csr::mstatus] | 0x8;
-              // }
-              // else {
-              //   // mie = 0
-              //   csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
-              // }
-
-              // csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
-              // // //
-              // if (prv == 0) {
-              //   exception(rv64::except::illegal_instruction, inst);
-              //   break;
-              // }
-              // const uint64_t mstatus = csr[csr::mstatus];
-              // pc = csr[csr::mepc];
-              // prv = (mstatus >> 11) % 4;
-              // const uint8_t mpie = (mstatus >> 7) % 2;
-              // set_csr(csr::mstatus, csr[csr::mstatus] & 0xFFFFFFFFFFFFE777);
-              // set_csr(csr::mstatus, csr[csr::mstatus] | (0x200000080 | uint32_t(mpie) << 3));
 
             break;
 
@@ -612,7 +590,12 @@ void processor::step() {
             set_reg_m(rd, dwa);
             vlog("ld x" << (unsigned int)rd << ", " << imm << "(x" << (unsigned int)rs1 << ")");
           } else {
+            if (stage2) {
             exception(rv64::except::load_address_misaligned, address);
+            }
+            else if (address % 4 != 0) {
+              std::cout << "Error: misaligned address for ld" << std::endl;
+            }
           }
         break;
 
@@ -1018,34 +1001,6 @@ void processor::exception(uint64_t cause, uint32_t inst) {
   set_csr(csr::mepc, pc);
   set_csr(csr::mcause, cause);
   update_pc(csr[csr::mtvec] & 0xfffffffffffffffc);
-  
-  // // set mstatus based on privelage level
-  // if (prv == 3) {
-
-  //   // mpp = 0b11
-  //   csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
-
-  //   // mpie = 0b0
-  //   csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
-
-  // } 
-  // else if (prv == 0) {
-
-  //   // mpp = 0b0
-  //   csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
-
-  //   // set mpie
-  //   if (csr[csr::mstatus] & 0x8) {
-  //     // mpie = 1
-  //     csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
-  //   } else {
-  //     // mpie = 0
-  //     csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
-  //   }
-
-  //   // mie = 0b0
-  //   csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
-  // }
 
   uint8_t mie = (csr[csr::mstatus] >> 3) % 2;
   csr[csr::mstatus] = csr[csr::mstatus] & 0xFFFFFFFFFFFFE777;
@@ -1113,12 +1068,11 @@ void processor::interrupt(uint64_t cause) {
   if (prv == 3) { // if machine mode
     // mpp = 0b11
     csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
-  } 
+  }
   else if (prv == 0) { // if user mode
 
     // switch to machine mode
     set_prv(3);
-
 
     if ((csr[csr::mstatus] & 0x8) == false) {
       // mpie = 0b0
@@ -1133,31 +1087,31 @@ void processor::interrupt(uint64_t cause) {
   switch(cause) {
     case rv64::interrupt::user_software:
       vlog("User software interrupt");
-      break;
+    break;
     
     case rv64::interrupt::machine_software:
       vlog("Machine software interrupt");
-      break;
+    break;
 
     case rv64::interrupt::user_timer:
       vlog("User timer interrupt")
-      break;
+    break;
     
     case rv64::interrupt::machine_timer:
       vlog("Machine timer interrupt");
-      break;
+    break;
     
     case rv64::interrupt::user_external:
       vlog("User external interrupt")
-      break;
+    break;
 
     case rv64::interrupt::machine_external:
       vlog("Machine external interrupt");
-      break;
+    break;
 
     default:
       vlog("Unimplemented interrupt");
-      break;
+    break;
   }
 
 }

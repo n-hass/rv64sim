@@ -1,8 +1,8 @@
 CC=gcc
 CXX=g++
 RM=rm -rf
-CPPFLAGS=-g -std=c++11 -Wall -pedantic
-LDFLAGS=-g
+CPPFLAGS=-g -std=c++11 -Wall -pedantic -flto
+LDFLAGS=-g -flto
 LDLIBS=
 
 ifdef LOGGING
