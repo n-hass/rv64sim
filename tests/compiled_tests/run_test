@@ -1,4 +1,45 @@
 #! /bin/bash
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+if [ -f "$1.hex" ]; then
+
+  ### Run test
+  echo "l \"$1.hex\"" > $1.run
+  echo "b 0" >> $1.run
+  echo "." >> $1.run
+  if [ -z "$2" ]; then
+    echo ". 99999999" >> $1.run
+  else
+    let "run_count = $2 - 1"
+    echo ". ${run_count}" >> $1.run
+  fi
+  echo "x10" >> $1.run
+
+  time ../../rv64sim ${RV64SIM_FLAGS} < $1.run > ${1}${RV64SIM_FLAGS// /}.log
+
+  rm -f $1.run
+
+  ### Comparison
+
+  OUT=$(diff -iw ${1}${RV64SIM_FLAGS// /}.log expected/${1}${RV64SIM_FLAGS// /}.log)
+  ret=$?
+  if [ "$OUT" != "" ]; then
+    >&2 printf "${RED}${1}${NC}\n"
+    echo "$OUT"
+    exit 1
+  elif [ $ret -eq 0 ]; then
+    printf "${GREEN}${1}${NC}\n"
+    exit 0
+  else
+    >&2 printf "${RED}Missing: ${1}${NC}\n"
+    exit 2
+  fi
+else
+  >&2 printf "${RED}Unknown test: ${1}${NC}\n"
+  exit 3
+fi
 
 echo "l \"$1.hex\"" > $1.run
 echo "b 0" >> $1.run

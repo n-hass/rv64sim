@@ -9,13 +9,17 @@ if [ -f "$1.cmd" ]; then
   OUT=$(diff -iw ${1}${RV64SIM_FLAGS// /}.log expected/${1}${RV64SIM_FLAGS// /}.log)
   ret=$?
   if [ "$OUT" != "" ]; then
-    printf "\n${RED}${1}${NC}\n"
+    >&2 printf "\n${RED}${1}${NC}\n"
     echo "$OUT"
+    exit 1
   elif [ $ret -eq 0 ]; then
     printf "\n${GREEN}${1}${NC}\n"
+    exit 0
   else
-    printf "${RED}Missing: ${1}${NC}\n"
+    >&2 printf "${RED}Missing: ${1}${NC}\n"
+    exit 2
   fi
 else
-  printf "${RED}Unknown test: ${1}${NC}\n"
+  >&2 printf "${RED}Unknown test: ${1}${NC}\n"
+  exit 3
 fi

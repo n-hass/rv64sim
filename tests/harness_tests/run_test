@@ -3,16 +3,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-if [ -f "$1.hex" ]; then
-  echo "l \"$1.hex\"" > $1.run
-  echo "b 0" >> $1.run
-  echo "." >> $1.run
-  echo ". 1000" >> $1.run
-  echo "x10" >> $1.run
-
-  ../../rv64sim ${RV64SIM_FLAGS} < $1.run > ${1}${RV64SIM_FLAGS// /}.log
-
-  rm -f $1.run
+if [ -f "$1.cmd" ]; then
+  ../../rv64sim ${RV64SIM_FLAGS} < ${1}.cmd > ${1}${RV64SIM_FLAGS// /}.log
 
   OUT=$(diff -iw ${1}${RV64SIM_FLAGS// /}.log expected/${1}${RV64SIM_FLAGS// /}.log)
   ret=$?

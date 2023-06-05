@@ -1026,7 +1026,7 @@ void processor::exception(uint64_t cause, uint32_t inst) {
       break;
 
     case rv64::except::ecall_from_u:
-      set_prv(3);
+      prv = 3;
     // no break, must also do below mtval clear as well
     case rv64::except::ecall_from_m:
 
@@ -1047,6 +1047,7 @@ void processor::interrupt(uint64_t cause) {
   vlog("Interrupt: " << cause << ", at: " << std::hex << pc);
 
   // mpie = 1
+  // csr[csr::mstatus] = SET_BIT_U64(csr[csr::mstatus], 7, true);
   csr[csr::mstatus] = csr[csr::mstatus] | 0x80;
 
   // store pc in mepc
@@ -1066,22 +1067,29 @@ void processor::interrupt(uint64_t cause) {
   pc_changed = true;
 
   if (prv == 3) { // if machine mode
+
     // mpp = 0b11
     csr[csr::mstatus] = csr[csr::mstatus] | 0x1800;
+
   }
   else if (prv == 0) { // if user mode
 
-    // switch to machine mode
-    set_prv(3);
+    // elevate to machine mode
+    prv = 3;
+    
+    // mpp = 0b00
+    csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffe7ff;
 
     if ((csr[csr::mstatus] & 0x8) == false) {
       // mpie = 0b0
+      // csr[csr::mstatus] = SET_BIT_U64(csr[csr::mstatus], 7, false);
       csr[csr::mstatus] = csr[csr::mstatus] & 0xffffffffffffff7f;
     }
     
   }
 
   // mie = 0b0
+  // csr[csr::mstatus] = SET_BIT_U64(csr[csr::mstatus], 3, false);
   csr[csr::mstatus] = csr[csr::mstatus] & 0xfffffffffffffff7;
 
   switch(cause) {

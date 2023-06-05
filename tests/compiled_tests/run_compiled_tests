@@ -1,7 +1,6 @@
 #!/bin/bash
 
 for i in compiled_test_*.hex; do
-  echo "**** Running ${i%.hex} *****"
-  time $(./run_test ${i%.hex} > ${i%.hex}${RV64SIM_FLAGS// /}.log)
+  ./run_test ${i%.hex}
 done
 

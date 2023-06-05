@@ -19,6 +19,12 @@
  */
 #define USE_BITMASK(value, mask, shift) (((value) & (mask)) >> (shift))
 
+
+/**
+ * For lazy bit twiddling :p
+ */
+#define SET_BIT_U64(var, bitNum, boolVal) ((var) = ((var) & ~(1ULL << (bitNum))) | ((uint64_t)(boolVal) << (bitNum)))
+
 // Field extraction from a RV64 RISC-V instructions
 #define EXTRACT_OPCODE_FROM_INST(value) ((value) & 0x7f)
 #define EXTRACT_FUNCT3_FROM_INST(value) (((value) >> 12) & 0x7)
