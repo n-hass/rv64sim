@@ -15,7 +15,7 @@
 #include "memory.h"
 using namespace std;
 
-#include "LogControl.hpp"
+#include "LogControl.h"
 
 #define validate(address) \
   index = address/blockSize; \

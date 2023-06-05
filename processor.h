@@ -12,7 +12,7 @@
 #include "memory.h"
 #include <string>
 #include <unordered_map>
-#include "LogControl.hpp"
+#include "LogControl.h"
 #include "Definitions.h"
 
 using namespace std;

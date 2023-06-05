@@ -16,7 +16,7 @@
 #include "processor.h"
 #include "commands.h"
 
-#include "LogControl.hpp"
+#include "LogControl.h"
 #include <filesystem>
 
 using namespace std;

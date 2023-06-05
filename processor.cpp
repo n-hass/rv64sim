@@ -16,7 +16,7 @@
 #include "memory.h"
 #include "processor.h"
 #include "Definitions.h"
-#include "LogControl.hpp"
+#include "LogControl.h"
 #include "Bits.h"
 
 using namespace std;
