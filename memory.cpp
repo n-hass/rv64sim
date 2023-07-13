@@ -10,7 +10,6 @@
 #include <fstream>
 #include <iomanip>
 #include <stdlib.h>
-#include <cstring>
 #include <cstdio>
 
 #include "memory.h"

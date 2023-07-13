@@ -1,0 +1,13 @@
+Memory write doubleword: address = 0000000000002000, data = 0000000034009173, mask = ffffffffffffffff
+Memory read doubleword: address = 0000000000002000, data = 0000000034009173
+Fetch: pc = 0000000000002000, ir = 34009173
+csrrw: rd = 2, rs1 = 1, csr_num = 340
+Exception raised: cause = 2, pc = 0000000000002000, val = 0000000034009173
+0000000000004000
+0000000000000002
+0000000000002000
+0000000200000000
+0000000034009173
+abababababababab
+0202020202020202
+Instructions executed: 0

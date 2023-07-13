@@ -1,0 +1,18 @@
+Memory write doubleword: address = 0000000000000000, data = 0000000034009173, mask = ffffffffffffffff
+Memory read doubleword: address = 0000000000000000, data = 0000000034009173
+Fetch: pc = 0000000000000000, ir = 34009173
+csrrw: rd = 2, rs1 = 1, csr_num = 340
+123456789abcdef0
+0000000000000000
+Memory read doubleword: address = 0000000000000000, data = 0000000034009173
+Fetch: pc = 0000000000000000, ir = 34009173
+csrrw: rd = 2, rs1 = 1, csr_num = 340
+0fedcba987654321
+123456789abcdef0
+Memory write doubleword: address = 0000000000000000, data = 0000000034009073, mask = ffffffffffffffff
+Memory read doubleword: address = 0000000000000000, data = 0000000034009073
+Fetch: pc = 0000000000000000, ir = 34009073
+csrrw: rd = 0, rs1 = 1, csr_num = 340
+81817f7f6c6c2c2c
+0000000000000000
+Instructions executed: 3

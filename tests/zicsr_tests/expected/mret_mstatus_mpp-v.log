@@ -1,0 +1,12 @@
+Memory write doubleword: address = 0000000000008000, data = 0000000030200073, mask = ffffffffffffffff
+Memory read doubleword: address = 0000000000008000, data = 0000000030200073
+Fetch: pc = 0000000000008000, ir = 30200073
+mret
+3 (machine)
+0000000200000080
+Memory read doubleword: address = 0000000000008000, data = 0000000030200073
+Fetch: pc = 0000000000008000, ir = 30200073
+mret
+0 (user)
+0000000200000080
+Instructions executed: 2

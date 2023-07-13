@@ -1,0 +1,19 @@
+Memory write doubleword: address = 0000000000001000, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002000, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002008, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002010, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002018, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002020, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002028, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002030, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002038, data = 0000001300000013, mask = ffffffffffffffff
+Interrupt taken: cause = 0, pc = 0000000000001000
+Memory read doubleword: address = 0000000000002000, data = 0000001300000013
+Fetch: pc = 0000000000002000, ir = 00000013
+addi: rd = 0, rs1 = 0, immed_I = 0000000000000000
+3 (machine)
+0000000000002004
+0000000200001880
+8000000000000000
+0000000000001000
+Instructions executed: 1

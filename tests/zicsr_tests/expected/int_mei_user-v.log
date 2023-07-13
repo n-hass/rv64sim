@@ -1,0 +1,44 @@
+Memory write doubleword: address = 0000000000001000, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002000, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002008, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002010, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002018, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002020, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002028, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002030, data = 0000001300000013, mask = ffffffffffffffff
+Memory write doubleword: address = 0000000000002038, data = 0000001300000013, mask = ffffffffffffffff
+Memory read doubleword: address = 0000000000001000, data = 0000001300000013
+Fetch: pc = 0000000000001000, ir = 00000013
+addi: rd = 0, rs1 = 0, immed_I = 0000000000000000
+0 (user)
+0000000000001004
+0000000200000000
+0000000000000000
+0000000000000000
+Memory read doubleword: address = 0000000000001000, data = 0000001300000013
+Fetch: pc = 0000000000001000, ir = 00000013
+addi: rd = 0, rs1 = 0, immed_I = 0000000000000000
+0 (user)
+0000000000001004
+0000000200000000
+0000000000000000
+0000000000000000
+Interrupt taken: cause = 11, pc = 0000000000001000
+Memory read doubleword: address = 0000000000002000, data = 0000001300000013
+Fetch: pc = 0000000000002000, ir = 00000013
+addi: rd = 0, rs1 = 0, immed_I = 0000000000000000
+3 (machine)
+0000000000002004
+0000000200000000
+800000000000000b
+0000000000001000
+Interrupt taken: cause = 11, pc = 0000000000001000
+Memory read doubleword: address = 0000000000002000, data = 0000001300000013
+Fetch: pc = 0000000000002000, ir = 00000013
+addi: rd = 0, rs1 = 0, immed_I = 0000000000000000
+3 (machine)
+0000000000002004
+0000000200000080
+800000000000000b
+0000000000001000
+Instructions executed: 4
