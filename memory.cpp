@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <cstdio>
+#include <cstring>
 
 #include "memory.h"
 using namespace std;
